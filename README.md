@@ -8,6 +8,9 @@ from "img.example.com" (same origin) but not from "data.example.net" (different 
 We would not want a script on "special-projects.myspotify.com" to read data
 from "julie-s-flower-shop.myspotify.com", but the only way to achieve that is to declare "myspotify.com"
 as a public suffix, and add it to the list. Turns out that there are quite a few domains like "myspotify.com",
-and adding all of them is feeding a burst of growth in the list.
+and adding all of them is feeding a burst of growth in the list. This analysis is performed by the script
+`pslhistory.py`, found in the `stats` folder.
 
-The analysis is performed by the script `sublist.py`, found in the `stats` folder.
+The next step is to analyse names found in *name lists*, such as those produced by the option `-E`
+of `ithitools`. The script `namecheck.py` will merge the data from multiple name lists and tabulate
+common prefixes up to the specified length.
