@@ -1,0 +1,126 @@
+#!/usr/bin/python
+# coding=utf-8
+#
+# Parse the names file
+
+import traceback
+import nameparse
+
+class prefixline:
+    def __init__(self):
+        self.prefix = ""
+        self.sub_count = 0
+        self.hit_count = 0
+        self.nb_parts = 0
+
+    def copy(self):
+        cp = prefixline()
+        cp.prefix = self.prefix
+        cp.sub_count = self.sub_count
+        cp.hit_count = self.hit_count
+        cp.nb_parts = self.nb_parts
+        return cp
+
+    def from_csv(self, line):
+        ret = False
+        p = line.split(",")
+        if len(p) == 4:
+            self.prefix = p[0]
+            try:
+                self.nb_parts = int(p[3])
+            except:
+                self.nb_parts = 0
+            try:
+                self.sub_count = int(p[1])
+            except:
+                self.sub_count = 0
+            try:
+                self.hit_count = int(p[2])
+                if self.hit_count > 0:
+                    ret = True
+            except:
+                self.hit_count = 0
+        return ret
+
+    def to_csv(self):
+        t = self.prefix + "," + str(self.sub_count) + "," + str(self.hit_count) + "," + str(self.nb_parts) +"\n"
+        return t
+
+    def csv_head():
+        return("prefix, sub_count, hit_count, nb_parts\n")
+
+# The prefix list accumulates the frequency of prefixes in the input files.
+# The raw entries are files of names, with an occurence count indicating how many
+# times that name was queried.
+# Upon finding a name, the following happen:
+# 1) If the name is longer than the maximum depth, shorten it.
+# 2) If the name is already present in the prefix list, simply increment the hit count.
+# 3) If the name is not present, record it. Initialize the sub count to 0. Initialize the
+#    hit count to the specified value. If the prefix length is > 1, increment the
+#    sub count of the parent prefix.
+
+class prefixlist:
+    def __init__(self, depth):
+        self.list = dict()
+        self.depth = depth
+
+    def add_line(self, line):
+        pl = prefixline()
+        if nl.from_csv(line):
+            self.list[pl.prefix] = pl
+
+    def load_prefix_file(self, prefix_file):
+        for line in open(prefix_file , "rt"):
+            self.add_line(line)
+
+    def load_name(self, name, hit_count):
+        parts = name.split(".")
+        nb_parts = len(parts)
+        # remove final dot if any
+        while nb_parts > 0 and len(parts[nb_parts-1]) == 0:
+            nb_parts -= 1
+        if nb_parts > 0 and not parts[nb_parts -1] == "ARPA":
+            # trim name to specified depth
+            if nb_parts > self.depth:
+                parts = parts[len(parts) - self.depth:]
+                nb_parts = self.depth
+            # compute prefix
+            prefix = parts[0]
+            for part in parts[1:]:
+                prefix += "." + part
+            # check whether the prefix is already present
+            if prefix in self.list:
+                # if present, just increase the hit count
+                self.list[prefix].hit_count += hit_count
+            else:
+                # if absent, add to the list
+                pl = prefixline()
+                pl.prefix = prefix
+                pl.hit_count = hit_count
+                pl.nb_parts = nb_parts
+                self.list[prefix] = pl
+                # increment sub_count of parent
+                if nb_parts > 1:
+                    parent = parts[1]
+                    for part in parts[2:]:
+                        parent += "." + part
+                    if not parent in self.list:
+                        # Add an entry for the parent, and recurse
+                        self.load_name(parent, 0)
+                    self.list[parent].sub_count += 1
+
+    def load_logfile(self, logfile):
+        for line in open(logfile , "rt"):
+            nl = nameparse.nameline()
+            if nl.from_csv(line) and nl.name_type =="tld":
+                self.load_name(nl.name, nl.count)
+
+    def write_file(self,logfile):
+        f = open(logfile , "wt", encoding="utf-8")
+        f.write(prefixline.csv_head())
+        for prefix in self.list:
+            f.write(self.list[prefix].to_csv())
+        f.close()
+
+
+
