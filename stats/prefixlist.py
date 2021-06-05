@@ -11,19 +11,25 @@ class prefixline:
         self.prefix = ""
         self.sub_count = 0
         self.hit_count = 0
+        self.nb_parts = 0
 
     def copy(self):
         cp = prefixline()
         cp.prefix = self.prefix
         cp.sub_count = self.sub_count
         cp.hit_count = self.hit_count
+        cp.nb_parts = self.nb_parts
         return cp
 
     def from_csv(self, line):
         ret = False
         p = line.split(",")
-        if len(p) == 3:
+        if len(p) == 4:
             self.prefix = p[0]
+            try:
+                self.nb_parts = int(p[3])
+            except:
+                self.nb_parts = 0
             try:
                 self.sub_count = int(p[1])
             except:
@@ -37,11 +43,11 @@ class prefixline:
         return ret
 
     def to_csv(self):
-        t = self.prefix + "," + str(self.sub_count) + "," + str(self.hit_count) + "\n"
+        t = self.prefix + "," + str(self.sub_count) + "," + str(self.hit_count) + "," + str(self.nb_parts) +"\n"
         return t
 
     def csv_head():
-        return("prefix, sub_count, hit_count\n")
+        return("prefix, sub_count, hit_count, nb_parts\n")
 
 # The prefix list accumulates the frequency of prefixes in the input files.
 # The raw entries are files of names, with an occurence count indicating how many
@@ -73,7 +79,7 @@ class prefixlist:
         # remove final dot if any
         while nb_parts > 0 and len(parts[nb_parts-1]) == 0:
             nb_parts -= 1
-        if nb_parts > 0:
+        if nb_parts > 0 and not parts[nb_parts -1] == "ARPA":
             # trim name to specified depth
             if nb_parts > self.depth:
                 parts = parts[len(parts) - self.depth:]
@@ -91,6 +97,7 @@ class prefixlist:
                 pl = prefixline()
                 pl.prefix = prefix
                 pl.hit_count = hit_count
+                pl.nb_parts = nb_parts
                 self.list[prefix] = pl
                 # increment sub_count of parent
                 if nb_parts > 1:
@@ -98,9 +105,8 @@ class prefixlist:
                     for part in parts[2:]:
                         parent += "." + part
                     if not parent in self.list:
-                        ppl = prefixline()
-                        ppl.prefix = parent
-                        self.list[parent] = ppl
+                        # Add an entry for the parent, and recurse
+                        self.load_name(parent, 0)
                     self.list[parent].sub_count += 1
 
     def load_logfile(self, logfile):
