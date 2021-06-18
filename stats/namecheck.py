@@ -70,14 +70,13 @@ def main():
     files_left = nb_files
     bucket_id = 0
     while files_left > 0:
-        print("After " + str(bucket_id) + " left files: " + str(files_left))
         nb_file_this_process = int(files_left / process_left)
         if nb_file_this_process == 0:
             nb_file_this_process = 1
         this_bucket_files = files[files_left - nb_file_this_process : files_left]
         bucket_id += 1
         temp_name = temp_prefix + str(bucket_id) + ".csv"
-        this_bucket = name_bucket(bucket_id, depth, temp_name, this_bucket_files)
+        this_bucket = name_bucket(bucket_id, depth + 1, temp_name, this_bucket_files)
         bucket_list.append(this_bucket)
         files_left -= nb_file_this_process
         process_left -= 1
@@ -100,9 +99,12 @@ def main():
         prefix_list = prefixlist.prefixlist(depth)
         for bucket in bucket_list:
             prefix_list.load_prefix_file(bucket.result_file_name)
+        summary_time = time.time()
+        print("Summary took " + str(summary_time - start_time))
         prefix_list.write_file(result_file)
     else:
         bucket_list[0].result_file_name = result_file
+        bucket_list[0].depth = depth
         load_name_bucket(bucket_list[0])
         print("Loaded a single bucket into " + result_file)
 
