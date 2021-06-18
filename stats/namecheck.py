@@ -92,15 +92,17 @@ def main():
                 bucket = future_to_bucket[future]
                 try:
                     data = future.result()
+                    sys.stdout.write(".")
                 except Exception as exc:
-                    print('Bucket %d generated an exception: %s' % (bucket.bucket_id, exc))
+                    print('\nBucket %d generated an exception: %s' % (bucket.bucket_id, exc))
         bucket_time = time.time()
-        print("Threads took " + str(bucket_time - start_time))
+        print("\nThreads took " + str(bucket_time - start_time))
         prefix_list = prefixlist.prefixlist(depth)
         for bucket in bucket_list:
             prefix_list.load_prefix_file(bucket.result_file_name)
+            sys.stdout.write(".")
         summary_time = time.time()
-        print("Summary took " + str(summary_time - start_time))
+        print("\nSummary took " + str(summary_time - start_time))
         prefix_list.write_file(result_file)
     else:
         bucket_list[0].result_file_name = result_file
