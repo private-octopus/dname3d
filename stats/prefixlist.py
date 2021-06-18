@@ -68,8 +68,9 @@ class prefixlist:
 
     def add_line(self, line):
         pl = prefixline()
-        if nl.from_csv(line):
-            self.list[pl.prefix] = pl
+        if pl.from_csv(line):
+            if pl.hit_count > 0:
+                self.load_name(pl.prefix, pl.hit_count)
 
     def load_prefix_file(self, prefix_file):
         for line in open(prefix_file , "rt"):
