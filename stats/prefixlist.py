@@ -5,6 +5,8 @@
 
 import traceback
 import nameparse
+import gzip
+import traceback
 
 class prefixline:
     def __init__(self):
@@ -109,11 +111,30 @@ class prefixlist:
                         self.load_name(parent, 0)
                     self.list[parent].sub_count += 1
 
-    def load_logfile(self, logfile):
+    def load_logfile_csv(self, logfile):
         for line in open(logfile , "rt"):
             nl = nameparse.nameline()
             if nl.from_csv(line) and nl.name_type =="tld":
                 self.load_name(nl.name, nl.count)
+
+    def load_logfile_gz(self, logfile):
+        try:
+            with gzip.open(logfile,'rt') as fin: 
+                for line in fin:
+                    nl = nameparse.nameline()
+                    if nl.from_csv(line) and nl.name_type =="tld":
+                        self.load_name(nl.name, nl.count)
+        except Exception as e:
+            traceback.print_exc()
+            print("Cannot process compressed file <" + logfile  + ">\nException: " + str(e))
+            print("Giving up");
+            exit(1) 
+
+    def load_logfile(self, logfile):
+        if logfile.endswith(".gz"):
+            self.load_logfile_gz(logfile)
+        else:
+            self.load_logfile_csv(logfile)
 
     def write_file(self,logfile):
         f = open(logfile , "wt", encoding="utf-8")
