@@ -93,6 +93,7 @@ def main():
                 try:
                     data = future.result()
                     sys.stdout.write(".")
+                    sys.stdout.flush()
                 except Exception as exc:
                     print('\nBucket %d generated an exception: %s' % (bucket.bucket_id, exc))
         bucket_time = time.time()
@@ -101,6 +102,7 @@ def main():
         for bucket in bucket_list:
             prefix_list.load_prefix_file(bucket.result_file_name)
             sys.stdout.write(".")
+            sys.stdout.flush()
         summary_time = time.time()
         print("\nSummary took " + str(summary_time - start_time))
         prefix_list.write_file(result_file)
