@@ -53,7 +53,7 @@ def main():
             depth = 0
         if depth == 0:
             print("Incorrect depth value: " + argv[1])
-    if depth == 0:
+    if depth <= 0:
         usage(sys.argv[0])
         exit(1)
     result_file = sys.argv[2]
@@ -77,7 +77,7 @@ def main():
         this_bucket_files = files[files_left - nb_file_this_process : files_left]
         bucket_id += 1
         temp_name = temp_prefix + str(bucket_id) + ".csv"
-        this_bucket = name_bucket(bucket_id, depth + 1, temp_name, this_bucket_files)
+        this_bucket = name_bucket(bucket_id, depth, temp_name, this_bucket_files)
         bucket_list.append(this_bucket)
         files_left -= nb_file_this_process
         process_left -= 1
@@ -96,6 +96,7 @@ def main():
                     sys.stdout.write(".")
                     sys.stdout.flush()
                 except Exception as exc:
+                    traceback.print_exc()
                     print('\nBucket %d generated an exception: %s' % (bucket.bucket_id, exc))
         bucket_time = time.time()
         print("\nThreads took " + str(bucket_time - start_time))

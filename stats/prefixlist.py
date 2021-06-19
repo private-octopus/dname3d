@@ -156,8 +156,9 @@ class prefixbranch:
             if nb_parts > 0:
                 s += "."
             for name_part in self.branches:
-                self.branches[name_part].write_branch(f, depth+1, suffix + name_part)
-        f.write(suffix + "," + str(sub_count) + "," + str(self.hit_count) + "," + str(nb_parts) + "\n")
+                self.branches[name_part].write_branch(f, nb_parts+1, suffix + name_part)
+        if nb_parts > 0:
+            f.write(suffix + "," + str(sub_count) + "," + str(self.hit_count) + "," + str(nb_parts) + "\n")
 
 class prefixtree:
     def __init__(self, depth):
@@ -185,6 +186,13 @@ class prefixtree:
                     branch.branches[part].hit_count += hit_count
                 else:
                     branch = branch.branches[part]
+
+    def load_prefix_file(self, prefix_file):
+        for line in open(prefix_file , "rt"):
+            pl = prefixline()
+            if pl.from_csv(line):
+                if pl.hit_count > 0:
+                    self.load_name(pl.prefix, pl.hit_count)
                     
     def load_logfile_csv(self, logfile):
         for line in open(logfile , "rt"):
@@ -204,6 +212,12 @@ class prefixtree:
             print("Cannot process compressed file <" + logfile  + ">\nException: " + str(e))
             print("Giving up");
             exit(1) 
+
+    def load_logfile(self, logfile):
+        if logfile.endswith(".gz"):
+            self.load_logfile_gz(logfile)
+        else:
+            self.load_logfile_csv(logfile)
 
     def write_file(self,logfile):
         f = open(logfile , "wt", encoding="utf-8")
