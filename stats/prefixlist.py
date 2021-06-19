@@ -144,5 +144,71 @@ class prefixlist:
             f.write(self.list[prefix].to_csv())
         f.close()
 
+class prefixbranch:
+    def __init__(self):
+        self.branches = dict()
+        self.hit_count = 0
+
+    def write_branch(self, f, nb_parts, suffix):
+        sub_count = len(self.branches)
+        if len(self.branches) > 0:
+            s = suffix
+            if nb_parts > 0:
+                s += "."
+            for name_part in self.branches:
+                self.branches[name_part].write_branch(f, depth+1, suffix + name_part)
+        f.write(suffix + "," + str(sub_count) + "," + str(self.hit_count) + "," + str(nb_parts) + "\n")
+
+class prefixtree:
+    def __init__(self, depth):
+        self.root = prefixbranch()
+        self.depth = depth
+
+    def load_name(self, name, hit_count):
+        parts = name.split(".")
+        nb_parts = len(parts)
+        # remove final dot if any
+        while nb_parts > 0 and len(parts[nb_parts-1]) == 0:
+            nb_parts -= 1
+        if nb_parts > 0 and not parts[nb_parts -1] == "ARPA":
+            # trim name to specified depth
+            if nb_parts > self.depth:
+                parts = parts[len(parts) - self.depth:]
+                nb_parts = self.depth
+            branch = self.root
+            while nb_parts > 0:
+                nb_parts -= 1
+                part = parts[nb_parts]
+                if not part in branch.branches:
+                    branch.branches[part] = prefixbranch()
+                if nb_parts == 0:
+                    branch.branches[part].hit_count += hit_count
+                else:
+                    branch = branch.branches[part]
+                    
+    def load_logfile_csv(self, logfile):
+        for line in open(logfile , "rt"):
+            nl = nameparse.nameline()
+            if nl.from_csv(line) and nl.name_type =="tld":
+                self.load_name(nl.name, nl.count)
+
+    def load_logfile_gz(self, logfile):
+        try:
+            with gzip.open(logfile,'rt') as fin: 
+                for line in fin:
+                    nl = nameparse.nameline()
+                    if nl.from_csv(line) and nl.name_type =="tld":
+                        self.load_name(nl.name, nl.count)
+        except Exception as e:
+            traceback.print_exc()
+            print("Cannot process compressed file <" + logfile  + ">\nException: " + str(e))
+            print("Giving up");
+            exit(1) 
+
+    def write_file(self,logfile):
+        f = open(logfile , "wt", encoding="utf-8")
+        f.write(prefixline.csv_head())
+        self.root.write_branch(f, 0, "")
+        f.close()
 
 

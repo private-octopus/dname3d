@@ -24,7 +24,8 @@ class name_bucket:
         self.bucket_id = bucket_id
         self.input_files = input_files
         self.result_file_name = result_file_name
-        self.prefix_list = prefixlist.prefixlist(depth)
+        #self.prefix_list = prefixlist.prefixlist(depth)
+        self.prefix_list = prefixlist.prefixtree(depth)
 
     def load(self):
         try:
@@ -98,7 +99,7 @@ def main():
                     print('\nBucket %d generated an exception: %s' % (bucket.bucket_id, exc))
         bucket_time = time.time()
         print("\nThreads took " + str(bucket_time - start_time))
-        prefix_list = prefixlist.prefixlist(depth)
+        prefix_list = prefixlist.prefixtree(depth)
         for bucket in bucket_list:
             prefix_list.load_prefix_file(bucket.result_file_name)
             sys.stdout.write(".")
