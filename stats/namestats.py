@@ -36,7 +36,7 @@ class namestats:
                     add_to_list(self.dga_tld, parts[1], count)
                     if len(self.dga_sample) < 1000:
                         self.dga_sample.append(name)
-        self.dga_tld = dict()
+        self.maybe_dga = dict()
 
     def load_name(self, name, count):
         parts = name.split(".")
