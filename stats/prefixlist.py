@@ -152,11 +152,12 @@ class prefixbranch:
     def write_branch(self, f, nb_parts, suffix):
         sub_count = len(self.branches)
         if len(self.branches) > 0:
-            s = suffix
+            s = ""
             if nb_parts > 0:
                 s += "."
+            s += suffix
             for name_part in self.branches:
-                self.branches[name_part].write_branch(f, nb_parts+1, suffix + name_part)
+                self.branches[name_part].write_branch(f, nb_parts+1, name_part + s)
         if nb_parts > 0:
             f.write(suffix + "," + str(sub_count) + "," + str(self.hit_count) + "," + str(nb_parts) + "\n")
 
