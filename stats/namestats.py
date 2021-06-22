@@ -143,7 +143,8 @@ class namestats:
             elif parts[0] == "dga_ip":
                 add_to_list(self.dga_ip, parts[1], count)
             elif parts[0] == "dga_sample":
-                self.dga_sample.append(parts[1])
+                if len(self.dga_sample) < 1000:
+                    self.dga_sample.append(parts[1])
             else:
                 print("Unexpected table in " + result_file + "\n" + line + "\ngiving up")
                 exit(1)
