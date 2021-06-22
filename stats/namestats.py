@@ -15,30 +15,47 @@ def add_to_list(table, name, count):
     else:
         table[name] = count
 
+class dga13maybe:
+    def __init__(self):
+        self.ip = ""
+        self.count = 0
+
 class namestats:
     def __init__(self):
         #self.list = dict()
         self.sum_by_cat = dict()
         self.maybe_dga = dict()
         self.dga_tld = dict()
+        self.dga_ip = dict()
         self.dga_sample = []
 
     def final_dga(self):
         for name in self.maybe_dga:
-            count = self.maybe_dga[name]
-            if count != 1:
-                add_to_list(self.sum_by_cat, "tld", count)
-                # add_to_list(self.list, name, count)
-            else:
-                add_to_list(self.sum_by_cat, "dga13", count)
+            ip = self.maybe_dga[name]
+            if ip != "-":
+                add_to_list(self.sum_by_cat, "dga13", 1)
+                add_to_list(self.dga_ip, ip, 1)
                 parts = name.split(".")
                 if len(parts) == 2:
-                    add_to_list(self.dga_tld, parts[1], count)
+                    add_to_list(self.dga_tld, parts[1], 1)
                     if len(self.dga_sample) < 1000:
                         self.dga_sample.append(name)
         self.maybe_dga = dict()
 
-    def load_name(self, name, count):
+    def trial_dga(self, name, ip, count):
+        # once identified as multiple count, we retain the name in the 
+        # list but mark the IP address as special, indicating it
+        # was already processed.
+        if name in self.maybe_dga:
+            if self.maybe_dga[name] != "-":
+                count += 1
+                self.maybe_dga[name] = "-"
+            if count > 0:
+                add_to_list(self.sum_by_cat, "tld", count)
+        else:
+            self.maybe_dga[name] = ip
+
+    def load_name(self, name, count, ip):
         parts = name.split(".")
         nb_parts = len(parts)
         # remove final dot if any
@@ -48,15 +65,17 @@ class namestats:
         if nb_parts > 0 and parts[nb_parts -1] == "ARPA":
             add_to_list(self.sum_by_cat, "arpa", count)
         elif nb_parts == 2 and (len(parts[0]) == 12 or len(parts[0]) == 13):
-            add_to_list(self.maybe_dga, name, count)
+            self.trial_dga(name, ip, count)
         else:
+            if nb_parts > 2:
+                self.trial_dga(parts[-2] + "." + parts[-1], "-", 0)
             add_to_list(self.sum_by_cat, "tld", count)
 
     def load_logline(self, line):
         nl = nameparse.nameline()
         if nl.from_csv(line):
             if nl.name_type == "tld":
-                self.load_name(nl.name, nl.count)
+                self.load_name(nl.name, nl.count, nl.ip)
             else:
                 add_to_list(self.sum_by_cat, nl.name_type, nl.count)
 
@@ -87,9 +106,11 @@ class namestats:
         for cat in self.sum_by_cat:
             f.write("catsum," + cat + "," + str(self.sum_by_cat[cat]) + "\n")
         for dga in self.maybe_dga:
-            f.write("maybe_dga," + dga + "," + str(self.maybe_dga[dga]) + "\n")
+            f.write("maybe_dga," + dga + "," + maybe_dga[dga] + "\n")
         for tld in self.dga_tld:
             f.write("dga_tld," + tld + "," + str(self.dga_tld[tld]) + "\n")
+        for ip in self.dga_ip:
+            f.write("dga_ip," + ip + "," + str(self.dga_ip[ip]) + "\n")
         for dga in self.dga_sample:
             f.write("dga_sample," + dga + ",1\n")
         f.close()
@@ -97,21 +118,30 @@ class namestats:
     def import_result_file(self, result_file):
         #self.list = dict()
         for line in open(result_file , "rt", encoding="utf-8"):
+            count = 0
+            ip = "-"
             parts = line.split(",")
             if len(parts) != 3:
                 print("Unexpected line in " + result_file + "\n" + line + "\ngiving up")
                 exit(1)
             try:
-                count = int(parts[2])
+                if parts[0] == "maybe_dga":
+                    ip = parts[2]
+                    if ip != "-":
+                        count = 1
+                else:
+                    count = int(parts[2])
             except:
                 print("Unexpected count in " + result_file + "\n" + line + "\ngiving up")
                 exit(1)
             if parts[0] == "catsum":
                 add_to_list(self.sum_by_cat, parts[1], count)
             elif parts[0] == "maybe_dga":
-                add_to_list(self.maybe_dga, parts[1], count)
+                self.trial_dga(parts[1], ip, count)
             elif parts[0] == "dga_tld":
-                add_to_list(self.maybe_dga, parts[1], count)
+                add_to_list(self.dga_tld, parts[1], count)
+            elif parts[0] == "dga_ip":
+                add_to_list(self.dga_ip, parts[1], count)
             elif parts[0] == "dga_sample":
                 self.dga_sample.append(parts[1])
             else:
