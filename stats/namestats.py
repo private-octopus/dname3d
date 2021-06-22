@@ -126,7 +126,7 @@ class namestats:
                 exit(1)
             try:
                 if parts[0] == "maybe_dga":
-                    ip = parts[2]
+                    ip = parts[2].strip()
                     if ip != "-":
                         count = 1
                 else:
