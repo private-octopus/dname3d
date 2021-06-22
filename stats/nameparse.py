@@ -40,7 +40,7 @@ class nameline:
             except:
                 self.count = 0
             if len(p) == 5:
-                self.ip = p[4]
+                self.ip = p[4].strip()
         return ret
 
     def to_csv(self):
