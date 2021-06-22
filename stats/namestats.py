@@ -106,7 +106,7 @@ class namestats:
         for cat in self.sum_by_cat:
             f.write("catsum," + cat + "," + str(self.sum_by_cat[cat]) + "\n")
         for dga in self.maybe_dga:
-            f.write("maybe_dga," + dga + "," + maybe_dga[dga] + "\n")
+            f.write("maybe_dga," + dga + "," + self.maybe_dga[dga] + "\n")
         for tld in self.dga_tld:
             f.write("dga_tld," + tld + "," + str(self.dga_tld[tld]) + "\n")
         for ip in self.dga_ip:
