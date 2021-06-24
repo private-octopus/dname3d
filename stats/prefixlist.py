@@ -144,6 +144,38 @@ class prefixlist:
             f.write(self.list[prefix].to_csv())
         f.close()
 
+    def has_dga13(self):
+        dga13_count = 0
+        tld_count = 0
+        for prefix in self.list:
+            is_dga = False
+            pv = self.list[prefix]
+            if pv.nb_parts == 2 and pv.sub_count == 0 and pv.hit_count == 1:
+                parts = prefix.split(".")
+                is_dga = len(parts) == 2 and (len(parts[0]) == 13 or len(parts[0]) == 12)
+            if is_dga:
+                dga13_count += 1
+            else:
+                tld_count += 1
+                if tld_count > 10000:
+                    break
+        return tld_count < 10*dga13_count
+
+    def purge_dga13(self):
+        purged_list = prefixlist(self.depth)
+        for prefix in self.list:
+            is_dga = False
+            pv = self.list[prefix]
+            if pv.nb_parts == 2 and pv.sub_count == 0 and pv.hit_count == 1:
+                parts = prefix.split(".")
+                is_dga = len(parts) == 2 and (len(parts[0]) == 13 or len(parts[0]) == 12)
+                if is_dga:
+                    dga_prefix = "__dga13__." + parts[1]
+                    purged_list.load_name(dga_prefix, pv.hit_count)
+            if not is_dga:
+                purged_list.load_name(prefix, pv.hit_count)
+        return purged_list
+
 class prefixbranch:
     def __init__(self):
         self.branches = dict()
