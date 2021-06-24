@@ -210,7 +210,7 @@ class prefixlist:
         return purged_list
 
     def top_prefixes(self, file_name, max_count):
-        flat = self.list.values()
+        flat = list(self.list.values())
         flat.sort()
         nb_published = 0
         f = open(file_name , "wt", encoding="utf-8")
