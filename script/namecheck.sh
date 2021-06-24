@@ -12,5 +12,5 @@ wc ~/$instance/list-$date
 
 rm ~/$instance/tmp-*
 
-python3 namecheck.py 4 ~/$instance/names-$date.csv ~/$instance/temp- `cat ~/$instance/list-$date`
+python3 namecheck.py 4 ~/$instance/names-$date.csv ~/$instance/tmp- `cat ~/$instance/list-$date`
 
