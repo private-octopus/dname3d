@@ -99,8 +99,6 @@ def main():
         summary_time = time.time()
         print("\nSummary took " + str(summary_time - start_time))
         stats.final_dga()
-        print("Removing " + str(len(stats.dga_sample)) + " dga samples. ")
-        stats.dga_sample = []
         stats.export_result_file(result_file)
     else:
         bucket_list[0].result_file_name = result_file
