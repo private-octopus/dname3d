@@ -51,6 +51,39 @@ class prefixline:
     def csv_head():
         return("prefix, sub_count, hit_count, nb_parts\n")
 
+    def myComp(self, other):
+        if (self.sub_count < other.sub_count):
+            return -1
+        elif (self.sub_count > other.sub_count):
+            return 1
+        elif (self.nb_parts < other.nb_parts):
+            return -1
+        elif (self.nb_parts > other.nb_parts):
+            return 1
+        elif (self.hit_count < other.hit_count):
+            return -1
+        elif (self.hit_count > other.hit_count):
+            return 1
+        elif (self.prefix < other.prefix):
+            return -1
+        elif (self.prefix > other.prefix):
+            return 1
+        else:
+            return 0
+    
+    def __lt__(self, other):
+        return self.myComp(other) < 0
+    def __gt__(self, other):
+        return self.myComp(other) > 0
+    def __eq__(self, other):
+        return self.myComp(other) == 0
+    def __le__(self, other):
+        return self.myComp(other) <= 0
+    def __ge__(self, other):
+        return self.myComp(other) >= 0
+    def __ne__(self, other):
+        return self.myComp(other) != 0
+
 # The prefix list accumulates the frequency of prefixes in the input files.
 # The raw entries are files of names, with an occurence count indicating how many
 # times that name was queried.
@@ -176,86 +209,17 @@ class prefixlist:
                 purged_list.load_name(prefix, pv.hit_count)
         return purged_list
 
-class prefixbranch:
-    def __init__(self):
-        self.branches = dict()
-        self.hit_count = 0
-
-    def write_branch(self, f, nb_parts, suffix):
-        sub_count = len(self.branches)
-        if len(self.branches) > 0:
-            s = ""
-            if nb_parts > 0:
-                s += "."
-            s += suffix
-            for name_part in self.branches:
-                self.branches[name_part].write_branch(f, nb_parts+1, name_part + s)
-        if nb_parts > 0:
-            f.write(suffix + "," + str(sub_count) + "," + str(self.hit_count) + "," + str(nb_parts) + "\n")
-
-class prefixtree:
-    def __init__(self, depth):
-        self.root = prefixbranch()
-        self.depth = depth
-
-    def load_name(self, name, hit_count):
-        parts = name.split(".")
-        nb_parts = len(parts)
-        # remove final dot if any
-        while nb_parts > 0 and len(parts[nb_parts-1]) == 0:
-            nb_parts -= 1
-        if nb_parts > 0 and not parts[nb_parts -1] == "ARPA":
-            # trim name to specified depth
-            if nb_parts > self.depth:
-                parts = parts[len(parts) - self.depth:]
-                nb_parts = self.depth
-            branch = self.root
-            while nb_parts > 0:
-                nb_parts -= 1
-                part = parts[nb_parts]
-                if not part in branch.branches:
-                    branch.branches[part] = prefixbranch()
-                if nb_parts == 0:
-                    branch.branches[part].hit_count += hit_count
-                else:
-                    branch = branch.branches[part]
-
-    def load_prefix_file(self, prefix_file):
-        for line in open(prefix_file , "rt"):
-            pl = prefixline()
-            if pl.from_csv(line):
-                if pl.hit_count > 0:
-                    self.load_name(pl.prefix, pl.hit_count)
-                    
-    def load_logfile_csv(self, logfile):
-        for line in open(logfile , "rt"):
-            nl = nameparse.nameline()
-            if nl.from_csv(line) and nl.name_type =="tld":
-                self.load_name(nl.name, nl.count)
-
-    def load_logfile_gz(self, logfile):
-        try:
-            with gzip.open(logfile,'rt') as fin: 
-                for line in fin:
-                    nl = nameparse.nameline()
-                    if nl.from_csv(line) and nl.name_type =="tld":
-                        self.load_name(nl.name, nl.count)
-        except Exception as e:
-            traceback.print_exc()
-            print("Cannot process compressed file <" + logfile  + ">\nException: " + str(e))
-            print("Giving up");
-            exit(1) 
-
-    def load_logfile(self, logfile):
-        if logfile.endswith(".gz"):
-            self.load_logfile_gz(logfile)
-        else:
-            self.load_logfile_csv(logfile)
-
-    def write_file(self,logfile):
-        f = open(logfile , "wt", encoding="utf-8")
+    def top_prefixes(self, file_name, max_count):
+        flat = self.list.values()
+        flat.sort()
+        nb_published = 0
+        f = open(file_name , "wt", encoding="utf-8")
         f.write(prefixline.csv_head())
-        self.root.write_branch(f, 0, "")
+        for pv in flat:
+            if pv.sub_count == 0:
+                break
+            f.write(pv.to_csv())
+            nb_published += 1
+            if max_count > 0 and nb_published >= max_count:
+                break
         f.close()
-
-

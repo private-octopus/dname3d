@@ -15,7 +15,8 @@ import os
 def usage(argv_0):
     print("Usage:\n" + argv_0 + " depth prefix_file name_file*")
     print("    depth:        maximum prefix length to be tabulated.")
-    print("    prefix_file:  file in which prefixes will be collected.")
+    print("    name_file:  file in which names will be collected")
+    print("    prefix_file:  file in which prefixes will be collected")
     print("    temp:         prefix for temporary files.")
     print("    name_file*:   at least one file containing name lists.")
 
@@ -58,10 +59,11 @@ def main():
         usage(sys.argv[0])
         exit(1)
     result_file = sys.argv[2]
-    temp_prefix = sys.argv[3]
+    prefix_file = sys.argv[3]
+    temp_prefix = sys.argv[4]
     nb_process = os.cpu_count()
-    nb_files = len(sys.argv) - 4
-    files = sys.argv[4:len(sys.argv)]
+    files = sys.argv[5:]
+    nb_files = len(files)
     bucket_list = []
     print("Aiming for " + str(nb_process) + " processes")
 
@@ -111,6 +113,7 @@ def main():
         summary_time = time.time()
         print("\nSummary took " + str(summary_time - start_time))
         prefix_list.write_file(result_file)
+        prefix_list.top_prefixes(prefix_file, 0)
     else:
         bucket_list[0].result_file_name = result_file
         bucket_list[0].depth = depth
