@@ -114,6 +114,8 @@ def main():
         print("\nSummary took " + str(summary_time - start_time))
         prefix_list.write_file(result_file)
         prefix_list.top_prefixes(prefix_file, 0)
+        saving_time = time.time()
+        print("\nSaving took " + str(saving_time - summary_time))
     else:
         bucket_list[0].result_file_name = result_file
         bucket_list[0].depth = depth

@@ -216,7 +216,7 @@ class prefixlist:
         f = open(file_name , "wt", encoding="utf-8")
         f.write(prefixline.csv_head())
         for pv in flat:
-            if pv.sub_count == 0:
+            if pv.sub_count <= 2:
                 break
             f.write(pv.to_csv())
             nb_published += 1
