@@ -64,7 +64,7 @@ class namestats:
         # TODO: trim to specified depth
         if nb_parts > 0 and parts[nb_parts -1] == "ARPA":
             add_to_list(self.sum_by_cat, "arpa", count)
-        elif nb_parts == 2 and (len(parts[0]) == 12 or len(parts[0]) == 13):
+        elif nb_parts >= 2 and (len(parts[0]) == 12 or len(parts[0]) == 13):
             self.trial_dga(name, ip, count)
         else:
             if nb_parts > 2:
