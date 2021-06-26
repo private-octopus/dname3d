@@ -209,6 +209,8 @@ class prefixlist:
                 purged_list.load_name(prefix, pv.hit_count)
         return purged_list
 
+    # TODO: for the top prefixes, we should really compute the total hits
+    # on that prefix, not just the direct hits.
     def top_prefixes(self, file_name, max_count):
         flat = list(self.list.values())
         flat.sort(reverse=True)
@@ -219,6 +221,161 @@ class prefixlist:
             if pv.sub_count <= 2:
                 break
             f.write(pv.to_csv())
+            nb_published += 1
+            if max_count > 0 and nb_published >= max_count:
+                break
+        f.close()
+
+# Prefix summary class is used to accumulated prefixes
+# collected during multiple parsing events. The precise count of subdomains is
+# impractical, so we tabulate the min and max found in the set of files,
+# as well as the number of files in which the prefix is found and the
+# name of the file with the highest subdomian found.
+
+class prefix_summary_line:
+    def __init__(self, prefix, nb_parts, hit_count, sub_min, sub_max, nb_files, file):
+        self.prefix = prefix
+        self.nb_parts = nb_parts
+        self.hit_count = hit_count
+        self.sub_min = sub_min
+        self.sub_max = sub_max
+        self.nb_files = nb_files
+        self.file = file
+
+    def add_one(self, hit_count, sub_count, file):
+        self.hit_count = hit_count
+        if self.sub_min > sub_count:
+            self.sub_min = sub_count
+        if self.sub_max < sub_count:
+            self.sub_max = sub_count
+            self.file = file
+        self.nb_files += 1
+
+    def add_other(self, other):
+        self.hit_count += other.hit_count
+        if self.sub_min > other.sub_min:
+            self.sub_min = other.sub_min
+        if self.sub_max < other.sub_max:
+            self.sub_max = other.sub_max
+            self.file = other.file
+        self.nb_files += other.nb_files
+    
+    def csv_head():
+        s = "prefix"
+        s += ", nb_parts"
+        s += ", hit_count"
+        s += ", sub_min"
+        s += ", sub_max"
+        s += ", nb_files"
+        s += ", file"
+        s += "\n"
+        return s
+
+    def to_csv(self):
+        s = self.prefix
+        s += "," + str(self.nb_parts)
+        s += "," + str(self.hit_count)
+        s += "," + str(self.sub_min)
+        s += "," + str(self.sub_max)
+        s += "," + str(self.nb_files)
+        s += "," + self.file
+        s += "\n"
+        return s
+
+    def from_csv(line):
+        p = line.split(",")
+        hit_count = 0
+        if len(p) == 8:
+            prefix = p[0]
+            try:
+                hit_count = int(p[2])
+                nb_parts = int(p[3])
+                sub_min = int(p[4])
+                sub_max = int(p[5])
+                nb_files = int(p[6])
+                file = p[7].strip()
+            except:
+                hit_count = 0
+            
+        if hit_count > 0:
+            return prefix_summary_line(prefix, nb_parts, hit_count, sub_min, sub_max, nb_files, file)
+        else:
+            return None
+
+    def myComp(self, other):
+        if (self.sub_max < other.sub_max):
+            return -1
+        elif (self.sub_max > other.sub_max):
+            return 1
+        if (self.nb_files < other.nb_files):
+            return -1
+        elif (self.nb_files > other.nb_files):
+            return 1
+        if (self.sub_min < other.sub_min):
+            return -1
+        elif (self.sub_min > other.sub_min):
+            return 1
+        elif (self.nb_parts < other.nb_parts):
+            return -1
+        elif (self.nb_parts > other.nb_parts):
+            return 1
+        elif (self.hit_count < other.hit_count):
+            return -1
+        elif (self.hit_count > other.hit_count):
+            return 1
+        elif (self.prefix < other.prefix):
+            return -1
+        elif (self.prefix > other.prefix):
+            return 1
+        else:
+            return 0
+    
+    def __lt__(self, other):
+        return self.myComp(other) < 0
+    def __gt__(self, other):
+        return self.myComp(other) > 0
+    def __eq__(self, other):
+        return self.myComp(other) == 0
+    def __le__(self, other):
+        return self.myComp(other) <= 0
+    def __ge__(self, other):
+        return self.myComp(other) >= 0
+    def __ne__(self, other):
+        return self.myComp(other) != 0
+
+class prefix_summary:
+    def __init__(self):
+        self.summary = dict()
+
+    def add_one(self, prefix, hit_count, sub_count, file):
+        if prefix in self.summary:
+            self.summary[prefix].add_one(hit_count, sub_count, file)
+        else:
+            self.summary[prefix] = prefix_summary_line( prefix, len(prefix.split(".")), hit_count, sub_count, sub_count, 1, file)
+
+    def parse_prefixes(self, file_name):
+        for line in open(file_name , "rt", encoding="utf-8"):
+            pl = prefixline()
+            if pl.from_csv(line):
+                self.add_one(pl.prefix, pl.hit_count, pl.sub_count, file_name)
+
+    def parse_prefix_summary(self, file_name):
+        for line in open(file_name , "rt", encoding="utf-8"):
+            pse = prefix_summary_line.from_csv(line)
+            if pse != None:
+                if pse.prefix in self.summary:
+                    self.summary[pse_prefix].add_other(pse)
+                else:
+                    self.summary[pse_prefix] = pse
+
+    def save_prefix_summary(self, file_name, max_count):
+        flat = list(self.summary.values())
+        flat.sort(reverse=True)
+        nb_published = 0
+        f = open(file_name , "wt", encoding="utf-8")
+        f.write(prefix_summary_line.csv_head())
+        for pse in flat:
+            f.write(pse.to_csv())
             nb_published += 1
             if max_count > 0 and nb_published >= max_count:
                 break
