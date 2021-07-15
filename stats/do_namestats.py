@@ -13,18 +13,24 @@ import time
 import concurrent.futures
 import os
 
+dga_subnet_list = [
+    ]
+
 def usage(argv_0):
-    print("Usage:\n" + argv_0 + " result_file temp name_file*")
+    print("Usage:\n" + argv_0 + " result_file suffix_file temp dga_subnets name_file*")
     print("    result_file:  file in which results will be collected.")
+    print("    suffix_file:  file in which suffixes are collected.")
     print("    temp:         prefix for temporary files (or \"-\" if only 1 process).")
+    print("    dga_subnets:  text file containing list of dga13 subnets."
     print("    name_file*:   at least one file containing name lists.")
 
 class name_bucket:
-    def __init__(self, bucket_id, result_file_name, input_files):
+    def __init__(self, bucket_id, result_file_name, suffix_file_name, dga_subnets, input_files):
         self.bucket_id = bucket_id
         self.input_files = input_files
         self.result_file_name = result_file_name
-        self.stats = namestats.namestats()
+        self.suffix_file_name = suffix_file_name
+        self.stats = namestats.namestats(dga_subnets)
 
     def load(self):
         try:
@@ -37,6 +43,7 @@ class name_bucket:
 
     def save(self):
         self.stats.export_result_file(self.result_file_name)
+        self.stats.export_suffix_file(self.suffix_file_name)
 
 def load_name_bucket(bucket):
     bucket.load()
@@ -44,14 +51,22 @@ def load_name_bucket(bucket):
 
 # main loop
 def main():
-    if len(sys.argv) < 4:
+    if len(sys.argv) < 6:
         usage(sys.argv[0])
         exit(1)
     result_file = sys.argv[1]
-    temp_prefix = sys.argv[2]
+    suffix_file_name = sys.argv[2]
+    temp_prefix = sys.argv[3]
+    dga_subnets_file = sys.argv[4]
     nb_process = os.cpu_count()
-    files = sys.argv[3:len(sys.argv)]
+    files = sys.argv[5:len(sys.argv)]
     nb_files = len(files)
+
+    if dga_subnets_file != "-":
+        dga_subnets = namestats.subnet_dict_from_file(dga_subnets_file)
+    else:
+        dga_subnets = dict()
+
     bucket_list = []
     print("Aiming for " + str(nb_process) + " processes")
 
@@ -68,7 +83,8 @@ def main():
         this_bucket_files = files[files_left - nb_file_this_process : files_left]
         bucket_id += 1
         temp_name = temp_prefix + str(bucket_id) + ".csv"
-        this_bucket = name_bucket(bucket_id, temp_name, this_bucket_files)
+        temp_suffix = temp_prefix + str(bucket_id) + ".sfx"
+        this_bucket = name_bucket(bucket_id, temp_name, temp_suffix, dga_subnets, this_bucket_files)
         bucket_list.append(this_bucket)
         files_left -= nb_file_this_process
         process_left -= 1

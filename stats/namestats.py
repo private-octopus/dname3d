@@ -6,8 +6,16 @@
 
 import traceback
 import nameparse
+import ipaddress
+import prefixlist
 import gzip
 import traceback
+
+def subnet_dict_from_file(file_name):
+    subdict = dict()
+    for line in open(file_name , "rt", encoding="utf-8"):
+        subdict[line.strip()] = 0
+    return subdict
 
 def add_to_list(table, name, count):
     if name in table:
@@ -21,25 +29,45 @@ class dga13maybe:
         self.count = 0
 
 class namestats:
-    def __init__(self):
+    def __init__(self, sublist):
         #self.list = dict()
         self.sum_by_cat = dict()
         self.maybe_dga = dict()
         self.dga_tld = dict()
         self.dga_ip = dict()
         self.dga_sample = []
+        self.dga_count = 0
+        self.suffixes = prefixlist.suffix_summary_file(4, 3)
+        self.sublist = sublist
+
+    def ip_is_in_sublist(self, ip):
+        ipa = ipaddress.ip_address(ip)
+        if ipa.version == 4:
+            isn = ipaddress.ip_network(ip + "/24", strict=False)
+        elif ipa.version == 6:
+            isn = ipaddress.ip_network(ip + "/48", strict=False)
+        else:
+            isn = ipaddress.ip_network("::/64")
+        if isn in self.sublist:
+            return True
+        return False
 
     def final_dga(self):
+        has_dga13 =  self.sum_by_cat["tld"] < 10*self.dga_count
         for name in self.maybe_dga:
             ip = self.maybe_dga[name]
             if ip != "-":
-                add_to_list(self.sum_by_cat, "dga13", 1)
-                add_to_list(self.dga_ip, ip, 1)
-                parts = name.split(".")
-                if len(parts) == 2:
-                    add_to_list(self.dga_tld, parts[1], 1)
-                    if len(self.dga_sample) < 1000:
-                        self.dga_sample.append(name)
+                if has_dga13 or self.ip_is_in_sublist(ip):
+                    add_to_list(self.sum_by_cat, "dga13", 1)
+                    add_to_list(self.dga_ip, ip, 1)
+                    parts = name.split(".")
+                    if len(parts) == 2:
+                        add_to_list(self.dga_tld, parts[1], 1)
+                        if len(self.dga_sample) < 1000:
+                            self.dga_sample.append(name)
+                else:
+                    add_to_list(self.sum_by_cat, "tld", 1)
+                    self.suffixes.add_name(name, count)
         self.maybe_dga = dict()
 
     def trial_dga(self, name, ip, count):
@@ -48,12 +76,20 @@ class namestats:
         # was already processed.
         if name in self.maybe_dga:
             if self.maybe_dga[name] != "-":
+                if self.dga_count > 0:
+                    self.dga_count -= 1
                 count += 1
                 self.maybe_dga[name] = "-"
             if count > 0:
                 add_to_list(self.sum_by_cat, "tld", count)
         else:
             self.maybe_dga[name] = ip
+            self.dga_count += 1
+
+    def load_prefix(self, nameparts):
+        suffix = nameparts[0]
+        for part in nameparts[1:]:
+            sufix += "." + part
 
     def load_name(self, name, count, ip):
         parts = name.split(".")
@@ -70,6 +106,8 @@ class namestats:
             if nb_parts > 2:
                 self.trial_dga(parts[-2] + "." + parts[-1], "-", 0)
             add_to_list(self.sum_by_cat, "tld", count)
+            self.suffixes.add_name(name, count)
+
 
     def load_logline(self, line):
         nl = nameparse.nameline()
@@ -148,3 +186,9 @@ class namestats:
             else:
                 print("Unexpected table in " + result_file + "\n" + line + "\ngiving up")
                 exit(1)
+                
+    def export_suffix_file(self, suffix_file):
+        self.suffixes.save(suffix_file)
+
+    def import_suffix_file(self, suffix_file):
+        self.suffixes.parse_suffix_summary(suffix_file)
