@@ -82,8 +82,8 @@ def main():
             nb_file_this_process = 1
         this_bucket_files = files[files_left - nb_file_this_process : files_left]
         bucket_id += 1
-        temp_name = temp_prefix + str(bucket_id) + ".csv"
-        temp_suffix = temp_prefix + str(bucket_id) + ".sfx"
+        temp_name = temp_prefix + str(bucket_id) + "_res.csv"
+        temp_suffix = temp_prefix + str(bucket_id) + "_sfx.csv"
         this_bucket = name_bucket(bucket_id, temp_name, temp_suffix, dga_subnets, this_bucket_files)
         bucket_list.append(this_bucket)
         files_left -= nb_file_this_process
@@ -116,9 +116,11 @@ def main():
         summary_time = time.time()
         print("\nSummary took " + str(summary_time - start_time))
         stats.final_dga()
-        stats.export_result_file(result_file)
+        stats.export_result_file(result_file) 
+        stats.export_suffix_file(suffix_file_name)
     else:
         bucket_list[0].result_file_name = result_file
+        bucket_list[0].suffix_file_name = suffix_file_name
         bucket_list[0].load()
         bucket_list[0].stats.final_dga()
         bucket_list[0].save()

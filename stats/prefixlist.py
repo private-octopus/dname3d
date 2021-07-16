@@ -497,7 +497,8 @@ class suffix_summary_file:
                 else:
                     # if creating a prefix, continue this loop so shorter prefixes
                     # are updated as needed.
-                    self.summary[suffix] = suffix_summary_entry(suffix, hits, self.hll_m)
+                    self.summary[suffix] = suffix_summary_entry(suffix, 0, self.hll_m)
+                    self.summary[suffix].add_subname(name_parts[i_p],hits)
                     hits = 0
 
     def prune(self, min_hits, min_subnames):

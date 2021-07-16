@@ -51,8 +51,6 @@ class namestats:
         isnt = str(isn)
         if isnt in self.sublist:
             return True
-        else:
-            print(ip + ", subnet " + isnt + " is not in list.")
         return False
 
     def final_dga(self):
@@ -114,7 +112,6 @@ class namestats:
                 self.trial_dga(parts[-2] + "." + parts[-1], "-", 0)
             add_to_list(self.sum_by_cat, "tld", count)
             self.suffixes.add_name(name, count)
-
 
     def load_logline(self, line):
         nl = nameparse.nameline()

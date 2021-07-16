@@ -78,9 +78,12 @@ class hyperloglog:
         return s
 
     def from_parts(self, parts):
-        for p in range(0,len(parts),2):
-            x = int(parts[i])
-            self.b[x] = int(parts[i+1])
+        np = len(parts)
+        p = 0
+        while p + 2 <= np and len(parts[p]) > 0:
+            x = int(parts[p])
+            self.b[x] = int(parts[p+1])
+            p += 2
 
 
 
