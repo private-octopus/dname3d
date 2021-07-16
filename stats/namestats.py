@@ -48,12 +48,18 @@ class namestats:
             isn = ipaddress.ip_network(ip + "/48", strict=False)
         else:
             isn = ipaddress.ip_network("::/64")
-        if isn in self.sublist:
+        isnt = str(isn)
+        if isnt in self.sublist:
             return True
+        else:
+            print(ip + ", subnet " + isnt + " is not in list.")
         return False
 
     def final_dga(self):
-        has_dga13 =  self.sum_by_cat["tld"] < 10*self.dga_count
+        if "tld" in self.sum_by_cat:
+            has_dga13 =  self.sum_by_cat["tld"] < 10*self.dga_count
+        else:
+            has_dga13 = False
         for name in self.maybe_dga:
             ip = self.maybe_dga[name]
             if ip != "-":
@@ -67,7 +73,7 @@ class namestats:
                             self.dga_sample.append(name)
                 else:
                     add_to_list(self.sum_by_cat, "tld", 1)
-                    self.suffixes.add_name(name, count)
+                    self.suffixes.add_name(name, 1)
         self.maybe_dga = dict()
 
     def trial_dga(self, name, ip, count):
@@ -84,7 +90,8 @@ class namestats:
                 add_to_list(self.sum_by_cat, "tld", count)
         else:
             self.maybe_dga[name] = ip
-            self.dga_count += 1
+            if ip != "-":
+                self.dga_count += 1
 
     def load_prefix(self, nameparts):
         suffix = nameparts[0]
@@ -138,18 +145,25 @@ class namestats:
         else:
             self.load_logfile_csv(logfile)
 
-    def export_result_file(self, result_file):
+    def export_result_table(f, table_name, table, do_sort=False):
+        key_list = list(table.keys())
+        if do_sort:
+            key_list = sorted(key_list)
+        for key in key_list:
+            f.write(table_name + "," + key + "," + str(table[key]) + "\n")
+
+    def export_result_file(self, result_file, do_sort=False):
         #self.list = dict()
         f = open(result_file , "wt", encoding="utf-8")
-        for cat in self.sum_by_cat:
-            f.write("catsum," + cat + "," + str(self.sum_by_cat[cat]) + "\n")
-        for dga in self.maybe_dga:
-            f.write("maybe_dga," + dga + "," + self.maybe_dga[dga] + "\n")
-        for tld in self.dga_tld:
-            f.write("dga_tld," + tld + "," + str(self.dga_tld[tld]) + "\n")
-        for ip in self.dga_ip:
-            f.write("dga_ip," + ip + "," + str(self.dga_ip[ip]) + "\n")
-        for dga in self.dga_sample:
+        namestats.export_result_table(f, "catsum" , self.sum_by_cat, do_sort)
+        namestats.export_result_table(f, "maybe_dga" , self.maybe_dga, do_sort)
+        namestats.export_result_table(f, "dga_tld" , self.dga_tld, do_sort)
+        namestats.export_result_table(f, "dga_ip" , self.dga_ip, do_sort)
+        if do_sort:
+            sample = sorted(self.dga_sample)
+        else:
+            sample = self.dga_sample
+        for dga in sample:
             f.write("dga_sample," + dga + ",1\n")
         f.close()
 
@@ -187,8 +201,8 @@ class namestats:
                 print("Unexpected table in " + result_file + "\n" + line + "\ngiving up")
                 exit(1)
                 
-    def export_suffix_file(self, suffix_file):
-        self.suffixes.save(suffix_file)
+    def export_suffix_file(self, suffix_file, need_sort=False):
+        self.suffixes.save_suffix_summary(suffix_file)
 
     def import_suffix_file(self, suffix_file):
         self.suffixes.parse_suffix_summary(suffix_file)

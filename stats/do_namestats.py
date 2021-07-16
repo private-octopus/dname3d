@@ -21,7 +21,7 @@ def usage(argv_0):
     print("    result_file:  file in which results will be collected.")
     print("    suffix_file:  file in which suffixes are collected.")
     print("    temp:         prefix for temporary files (or \"-\" if only 1 process).")
-    print("    dga_subnets:  text file containing list of dga13 subnets."
+    print("    dga_subnets:  text file containing list of dga13 subnets.")
     print("    name_file*:   at least one file containing name lists.")
 
 class name_bucket:
@@ -107,9 +107,10 @@ def main():
                     print('\nBucket %d generated an exception: %s' % (bucket.bucket_id, exc))
         bucket_time = time.time()
         print("\nThreads took " + str(bucket_time - start_time))
-        stats = namestats.namestats()
+        stats = namestats.namestats(dga_subnets)
         for bucket in bucket_list:
             stats.import_result_file(bucket.result_file_name)
+            stats.import_suffix_file(bucket.suffix_file_name)
             sys.stdout.write(".")
             sys.stdout.flush()
         summary_time = time.time()

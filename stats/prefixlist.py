@@ -542,22 +542,24 @@ class suffix_summary_file:
             f.write(sse.to_text() + '\n')
         f.close()
                     
-    def save_suffix_summary(self, file_name):
+    def save_suffix_summary(self, file_name, top_n=0, sort=False, by_hits=False, eval=False):
+        if eval:
+            self.evaluate()
         flat = list(self.summary.values())
-        suffix_summary_file.save_list(flat, file_name)
+        if top_n > 0 or sort:
+            if by_hits:
+                flat.sort(key=hits, reverse=True)
+            else:
+                flat.sort(key=functools.cmp_to_key(compare_by_subs), reverse=True)
+        if top_n == 0:
+            top_n = len(flat)
+        suffix_summary_file.save_list(flat[0:top_n], file_name)
 
     def top_by_hits(self, file_name, nb_requested):
-        flat = list(self.summary.values())
-        flat.sort(key=hits, reverse=True)
-        suffix_summary_file.save_list(flat[0:nb_requested], file_name)
+        self.save_suffix_summary(file_name, top_n=nb_requested, sort=True, eval=True, by_hits=True)
 
-    def top_by_subs(self, file_name, nb_requested):
-        self.evaluate()
-        flat = list(self.summary.values())
-        flat = sorted(flat, key=functools.cmp_to_key(compare_by_subs), reverse=True)
-        if nb_requested == 0:
-            nb_requested = len(flat)
-        suffix_summary_file.save_list(flat[0:nb_requested], file_name)
+    def top_by_subs(self, file_name, nb_requested=0):
+        self.save_suffix_summary(file_name, top_n=nb_requested, sort=True, eval=True)
 
 
 

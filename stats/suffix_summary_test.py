@@ -1,15 +1,7 @@
 #!/usr/bin/python
 # coding=utf-8
 #
-# Parse the names file and extract statistics similar to sum3,
-# but also including the dga13 category.
-
-import traceback
-import sys
-#!/usr/bin/python
-# coding=utf-8
-#
-# Merge a number of prefix entries into a single prefix summary.
+# Unit test of the suffix summary module including hyperloglog
 
 
 import sys
@@ -61,7 +53,7 @@ for file_name in files:
 
 sub_s.evaluate()
 
-sub_s.top_by_subs(suffix_out, 0)
+sub_s.top_by_subs(suffix_out)
 
 if not compare_file_test.compare_files(suffix_out, suffix_ref):
     exit(1)
