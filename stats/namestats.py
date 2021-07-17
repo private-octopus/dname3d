@@ -17,6 +17,17 @@ def subnet_dict_from_file(file_name):
         subdict[line.strip()] = 0
     return subdict
 
+def ip_in_subnet_dict(d, ip):
+    ipa = ipaddress.ip_address(ip)
+    if ipa.version == 4:
+        isn = ipaddress.ip_network(ip + "/24", strict=False)
+    elif ipa.version == 6:
+        isn = ipaddress.ip_network(ip + "/48", strict=False)
+    else:
+        isn = ipaddress.ip_network("::/64")
+    isnt = str(isn)
+    return (isnt in d)
+
 def add_to_list(table, name, count):
     if name in table:
         table[name] += count
@@ -41,17 +52,7 @@ class namestats:
         self.sublist = sublist
 
     def ip_is_in_sublist(self, ip):
-        ipa = ipaddress.ip_address(ip)
-        if ipa.version == 4:
-            isn = ipaddress.ip_network(ip + "/24", strict=False)
-        elif ipa.version == 6:
-            isn = ipaddress.ip_network(ip + "/48", strict=False)
-        else:
-            isn = ipaddress.ip_network("::/64")
-        isnt = str(isn)
-        if isnt in self.sublist:
-            return True
-        return False
+        return ip_in_subnet_dict(self.sublist, ip)
 
     def final_dga(self):
         if "tld" in self.sum_by_cat:
@@ -91,11 +92,6 @@ class namestats:
             if ip != "-":
                 self.dga_count += 1
 
-    def load_prefix(self, nameparts):
-        suffix = nameparts[0]
-        for part in nameparts[1:]:
-            sufix += "." + part
-
     def load_name(self, name, count, ip):
         parts = name.split(".")
         nb_parts = len(parts)
@@ -105,8 +101,8 @@ class namestats:
         # TODO: trim to specified depth
         if nb_parts > 0 and parts[nb_parts -1] == "ARPA":
             add_to_list(self.sum_by_cat, "arpa", count)
-        elif nb_parts >= 2 and (len(parts[0]) == 12 or len(parts[0]) == 13):
-            self.trial_dga(name, ip, count)
+        elif nb_parts >= 2 and count == 1 and (len(parts[0]) == 12 or len(parts[0]) == 13):
+            self.trial_dga(name, ip, 1)
         else:
             if nb_parts > 2:
                 self.trial_dga(parts[-2] + "." + parts[-1], "-", 0)
