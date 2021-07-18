@@ -4,6 +4,7 @@
 # Generic handling of input parallelism
 
 import concurrent.futures
+import sys
 import os
 import traceback
 
