@@ -114,6 +114,10 @@ class dga13_bucket:
             print("For file <" + suffix_file_name  + ">\nException: " + str(e))
             exit(1)
 
+def usage(argv0):
+    print("Usage: " + argv0 + " suffix_file_name tmp_prefix dga_subnet_file name_files*")
+    exit(1)
+
 # main loop
 def main():
     if len(sys.argv) < 5:
