@@ -38,20 +38,24 @@ class dga13_bucket:
 
     def load_logline(self, line):
         nl = nameparse.nameline()
-        if nl.from_csv(line):
-            if nl.name_type == "tld":
-                parts = nl.name.split(".")
-                if len(parts) > 1 and \
-                    nl.count == 1 and \
-                    (len(parts[0]) == 12 or len(parts[0]) == 13) and \
-                    namestats.ip_in_subnet_dict(self.dga_subnets, nl.ip):
-                    suffix = parts[1]
-                    for part in parts[2:]:
-                        suffix += "." + part 
-                    if suffix in self.suffixes:
-                        self.suffixes[suffix] += 1
-                    else:
-                        self.suffixes[suffix] = 1
+        try:
+            if nl.from_csv(line):
+                if nl.name_type == "tld":
+                    parts = nl.name.split(".")
+                    if len(parts) > 1 and \
+                        nl.count == 1 and \
+                        (len(parts[0]) == 12 or len(parts[0]) == 13) and \
+                        namestats.ip_in_subnet_dict(self.dga_subnets, nl.ip):
+                        suffix = parts[1]
+                        for part in parts[2:]:
+                            suffix += "." + part 
+                        if suffix in self.suffixes:
+                            self.suffixes[suffix] += 1
+                        else:
+                            self.suffixes[suffix] = 1                 
+        except Exception as e:
+            traceback.print_exc()
+            print("Cannot process input line:" + line  + "\nException: " + str(e))
         
     def load_logfile_csv(self, logfile):
         for line in open(logfile , "rt"):
