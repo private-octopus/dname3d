@@ -31,7 +31,7 @@ def init_buckets(bucket_class, max_buckets, files, params):
     return bucket_list
 
 def run_buckets(bucket_list):
-    with concurrent.futures.ProcessPoolExecutor(max_workers = nb_process) as executor:
+    with concurrent.futures.ProcessPoolExecutor(max_workers = len(bucket_list)) as executor:
         future_to_bucket = {executor.submit(load_bucket, bucket):bucket for bucket in bucket_list }
         for future in concurrent.futures.as_completed(future_to_bucket):
             bucket = future_to_bucket[future]

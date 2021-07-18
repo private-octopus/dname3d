@@ -15,6 +15,7 @@ import prefixlist
 import gzip
 import sys
 import time
+import os
 import parallel_buckets
 
 class dga13_bucket_param:
@@ -51,8 +52,6 @@ class dga13_bucket:
                         self.suffixes[suffix] += 1
                     else:
                         self.suffixes[suffix] = 1
-                else:
-                    print(nl.name + ": " + str(nl.count) + "; " + str(len(parts[0])) + "; " + str(namestats.ip_in_subnet_dict(self.dga_subnets, nl.ip)))
         
     def load_logfile_csv(self, logfile):
         for line in open(logfile , "rt"):
@@ -91,14 +90,20 @@ class dga13_bucket:
                 f.write(key + "," + str(self.suffixes[key]) + "\n")
 
     def import_list(self, suffix_file_name):
-        for line in  open(self.suffix_file_name , "rt", encoding="utf-8"):
-            p = line.strip()
-            s = p[0].strip()
-            c = int(p[1].strip())
-            if s in self.suffixes:
-                self.suffixes[s] += c
-            else:
-                self.suffixes[s] = c
+        for line in open(suffix_file_name , "rt", encoding="utf-8"):
+            try:
+                p = line.split(",")
+                s = p[0].strip()
+                c = int(p[1].strip())
+                if s in self.suffixes:
+                    self.suffixes[s] += c
+                else:
+                    self.suffixes[s] = c
+            except Exception as e:
+                traceback.print_exc()
+                print("In file <" + suffix_file_name  + ">\nCannot parse line:\n" + line.strip() + "\nException: " + str(e))
+                exit(1)
+                
 
 # main loop
 def main():
@@ -135,6 +140,7 @@ def main():
         print("\nThreads took " + str(bucket_time - start_time))
         summary = dga13_bucket()
         summary.dga_subnets = dga_subnets
+        summary.suffix_file_name = suffix_file_name
         for bucket in bucket_list:
             summary.import_list(bucket.suffix_file_name)
             sys.stdout.write(".")
