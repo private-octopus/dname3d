@@ -8,5 +8,5 @@ ls -d /data/ITHI/results-name/$eastwest/results-$instance/$date* >~/$instance/li
 
 rm ~/$instance/tmp-*
 
-python3 do_namestats.py ~/$instance/stats-$date.csv ~/$instance/tmp- `cat ~/$instance/list-$date`
+python3 do_namestats.py ~/$instance/stats-$date.csv  ~/$instance/suffixes-$date.csv ~/$instance/tmp- ../data/dga13_subnets.txt `cat ~/$instance/list-$date`
 
