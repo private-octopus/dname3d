@@ -90,20 +90,25 @@ class dga13_bucket:
                 f.write(key + "," + str(self.suffixes[key]) + "\n")
 
     def import_list(self, suffix_file_name):
-        for line in open(suffix_file_name , "rt", encoding="utf-8"):
-            try:
-                p = line.split(",")
-                s = p[0].strip()
-                c = int(p[1].strip())
-                if s in self.suffixes:
-                    self.suffixes[s] += c
-                else:
-                    self.suffixes[s] = c
-            except Exception as e:
-                traceback.print_exc()
-                print("In file <" + suffix_file_name  + ">\nCannot parse line:\n" + line.strip() + "\nException: " + str(e))
-                exit(1)
-                
+        try:
+            for line in open(suffix_file_name , "rt", encoding="utf-8"):
+                try:
+                    p = line.split(",")
+                    s = p[0].strip()
+                    c = int(p[1].strip())
+                    if s in self.suffixes:
+                        self.suffixes[s] += c
+                    else:
+                        self.suffixes[s] = c
+                except Exception as e:
+                    traceback.print_exc()
+                    print("In file <" + suffix_file_name  + ">\nCannot parse line:\n" + line.strip() + "\nException: " + str(e))
+                    exit(1)
+            
+        except Exception as e:
+            traceback.print_exc()
+            print("For file <" + suffix_file_name  + ">\nException: " + str(e))
+            exit(1)
 
 # main loop
 def main():
