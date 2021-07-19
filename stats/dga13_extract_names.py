@@ -45,7 +45,7 @@ class dga13_bucket:
                     if len(parts) > 1 and \
                         nl.count == 1 and \
                         (len(parts[0]) == 12 or len(parts[0]) == 13) and \
-                        namestats.ip_in_subnet_dict(self.dga_subnets, nl.ip):
+                        (nl.ip == '' or namestats.ip_in_subnet_dict(self.dga_subnets, nl.ip)):
                         suffix = parts[1]
                         for part in parts[2:]:
                             suffix += "." + part 
