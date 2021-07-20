@@ -30,11 +30,16 @@ class dga13_bucket:
         self.input_files = []
         self.dga_subnets = dict()
         self.suffix_file_name = ""
+        self.p0_count_file_name = ""
         self.suffixes = dict()
+        self.p0_count = []
+        for i in range(0,64):
+            self.p0_count[i] = 0
 
     def complete_init(self, param):
         self.dga_subnets = param.dga_subnets
         self.suffix_file_name = param.temp_prefix + str(self.bucket_id) + param.suffix_name
+        self.p0_count_file_name = param.temp_prefix + str(self.bucket_id) + "_p0count.csv"
 
     def load_logline(self, line):
         nl = nameparse.nameline()
@@ -45,15 +50,19 @@ class dga13_bucket:
                     if len(parts) > 1 and \
                         nl.count == 1 and \
                         parts[-1] != "ARPA" and \
-                        (len(parts[0]) == 12 or len(parts[0]) == 13) and \
                         (nl.ip != '' and namestats.ip_in_subnet_dict(self.dga_subnets, nl.ip)):
-                        suffix = parts[1]
-                        for part in parts[2:]:
-                            suffix += "." + part 
-                        if suffix in self.suffixes:
-                            self.suffixes[suffix] += 1
-                        else:
-                            self.suffixes[suffix] = 1                 
+                        lp0 = len(parts[0])
+                        if lp0 > 63:
+                            lp0 = 63
+                        self.p0_count[lp0] += 1
+                        if lp0 == 12 or lp0 == 13:
+                            suffix = parts[1]
+                            for part in parts[2:]:
+                                suffix += "." + part 
+                            if suffix in self.suffixes:
+                                self.suffixes[suffix] += 1
+                            else:
+                                self.suffixes[suffix] = 1                 
         except Exception as e:
             traceback.print_exc()
             print("Cannot process input line:" + line  + "\nException: " + str(e))
@@ -93,6 +102,10 @@ class dga13_bucket:
         with open(self.suffix_file_name , "wt", encoding="utf-8") as f:
             for key in keys:
                 f.write(key + "," + str(self.suffixes[key]) + "\n")
+        
+        with open(self.p0_count_file_name , "wt", encoding="utf-8") as f:
+            for i in range(0,64):
+                f.write(str(i) + "," + str(self.p0_count[i]) + "\n")
 
     def import_list(self, suffix_file_name):
         try:
@@ -108,6 +121,27 @@ class dga13_bucket:
                 except Exception as e:
                     traceback.print_exc()
                     print("In file <" + suffix_file_name  + ">\nCannot parse line:\n" + line.strip() + "\nException: " + str(e))
+                    exit(1)
+        except Exception as e:
+            traceback.print_exc()
+            print("For file <" + suffix_file_name  + ">\nException: " + str(e))
+            exit(1)
+
+    
+    def import_p0_count(self, p0_count_file_name):
+        try:
+            for line in open(p0_count_file_name , "rt", encoding="utf-8"):
+                try:
+                    p = line.split(",")
+                    i = int(p[0].strip())
+                    c = int(p[1].strip())
+                    if i >= 0 and i < 64:
+                        self.p0_count[i] += c
+                    else:
+                        print("Unexpected count: " + line.strip())
+                except Exception as e:
+                    traceback.print_exc()
+                    print("In file <" + p0_count_file_name  + ">\nCannot parse line:\n" + line.strip() + "\nException: " + str(e))
                     exit(1)
             
         except Exception as e:
@@ -126,9 +160,10 @@ def main():
         exit(1)
 
     suffix_file_name = sys.argv[1]
-    temp_prefix = sys.argv[2]
-    dga_subnets_file = sys.argv[3]
-    files = sys.argv[4:len(sys.argv)]
+    p0_count_file_name = sys.argv[2]
+    temp_prefix = sys.argv[3]
+    dga_subnets_file = sys.argv[4]
+    files = sys.argv[5:len(sys.argv)]
 
     if dga_subnets_file != "-":
         dga_subnets = namestats.subnet_dict_from_file(dga_subnets_file)
@@ -155,8 +190,10 @@ def main():
         summary = dga13_bucket()
         summary.dga_subnets = dga_subnets
         summary.suffix_file_name = suffix_file_name
+        summary.p0_count_file_name = p0_count_file_name
         for bucket in bucket_list:
             summary.import_list(bucket.suffix_file_name)
+            summary.import_p0_count(bucket.p0_count_file_name)
             sys.stdout.write(".")
             sys.stdout.flush()
         summary_time = time.time()
@@ -167,6 +204,7 @@ def main():
         print("\nSave took " + str(save_time - summary_time))
     else:
         bucket_list[0].suffix_file_name = suffix_file_name
+        bucket_list[0].p0_count_file_name = p0_count_file_name
         bucket_list[0].load()
         load_time = time.time()
         print("\nLoad took " + str(load_time - start_time))
