@@ -8,5 +8,5 @@ ls -d /data/ITHI/results-name/$eastwest/results-$instance/$date* >~/$instance/li
 
 rm -f ~/$instance/tmp-*
 
-python3 dga13_extract_names.py ~/$instance/dga13_sfx-$date.csv ~/$instance/tmp- ../data/dga13_subnets.txt `cat ~/$instance/list-$date`
+python3 dga13_extract_names.py ~/$instance/dga13_sfx-$date.csv ~/$instance/p0_count-$date.csv ~/$instance/tmp- ../data/dga13_subnets.txt `cat ~/$instance/list-$date`
 
