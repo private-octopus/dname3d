@@ -34,7 +34,7 @@ class dga13_bucket:
         self.suffixes = dict()
         self.p0_count = []
         for i in range(0,64):
-            self.p0_count[i] = 0
+            self.p0_count.append(0)
 
     def complete_init(self, param):
         self.dga_subnets = param.dga_subnets
