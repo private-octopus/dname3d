@@ -44,12 +44,12 @@ class namestats:
         #self.list = dict()
         self.sum_by_cat = dict()
         self.maybe_dga = dict()
-        self.dga_tld = dict()
-        self.dga_ip = dict()
-        self.dga_sample = []
         self.dga_count = 0
         self.suffixes = prefixlist.suffix_summary_file(4, 3)
         self.sublist = sublist
+        self.p0_count = []
+        for i in range(0,64):
+            self.p0_count.append(0)
 
     def ip_is_in_sublist(self, ip):
         return ip_in_subnet_dict(self.sublist, ip)
@@ -62,14 +62,8 @@ class namestats:
         for name in self.maybe_dga:
             ip = self.maybe_dga[name]
             if ip != "-":
-                if has_dga13 or self.ip_is_in_sublist(ip):
+                if has_dga13 or (ip != '' and self.ip_is_in_sublist(ip)):
                     add_to_list(self.sum_by_cat, "dga13", 1)
-                    add_to_list(self.dga_ip, ip, 1)
-                    parts = name.split(".")
-                    if len(parts) == 2:
-                        add_to_list(self.dga_tld, parts[1], 1)
-                        if len(self.dga_sample) < 1000:
-                            self.dga_sample.append(name)
                 else:
                     add_to_list(self.sum_by_cat, "tld", 1)
                     self.suffixes.add_name(name, 1)
@@ -101,13 +95,22 @@ class namestats:
         # TODO: trim to specified depth
         if nb_parts > 0 and parts[nb_parts -1] == "ARPA":
             add_to_list(self.sum_by_cat, "arpa", count)
-        elif nb_parts >= 2 and count == 1 and (len(parts[0]) == 12 or len(parts[0]) == 13):
-            self.trial_dga(name, ip, 1)
         else:
-            if nb_parts > 2:
-                self.trial_dga(parts[-2] + "." + parts[-1], "-", 0)
-            add_to_list(self.sum_by_cat, "tld", count)
-            self.suffixes.add_name(name, count)
+            if nb_parts > 0:
+                lp0 = len(parts[0])
+                if lp0 > 63:
+                    lp0 = 63
+            else:
+                lp0 = 0
+            self.p0_count[lp0] += 1
+
+            if nb_parts >= 2 and count == 1 and (len(parts[0]) == 12 or len(parts[0]) == 13):
+                self.trial_dga(name, ip, 1)
+            else:
+                if nb_parts > 2:
+                    self.trial_dga(parts[-2] + "." + parts[-1], "-", 0)
+                add_to_list(self.sum_by_cat, "tld", count)
+                self.suffixes.add_name(name, count)
 
     def load_logline(self, line):
         nl = nameparse.nameline()
@@ -150,14 +153,8 @@ class namestats:
         f = open(result_file , "wt", encoding="utf-8")
         namestats.export_result_table(f, "catsum" , self.sum_by_cat, do_sort)
         namestats.export_result_table(f, "maybe_dga" , self.maybe_dga, do_sort)
-        namestats.export_result_table(f, "dga_tld" , self.dga_tld, do_sort)
-        namestats.export_result_table(f, "dga_ip" , self.dga_ip, do_sort)
-        if do_sort:
-            sample = sorted(self.dga_sample)
-        else:
-            sample = self.dga_sample
-        for dga in sample:
-            f.write("dga_sample," + dga + ",1\n")
+        for i in range(0,64):
+            f.write("p0_count," + str(i) + "," + str(self.p0_count[i]) + "\n")
         f.close()
 
     def import_result_file(self, result_file):
@@ -183,13 +180,8 @@ class namestats:
                 add_to_list(self.sum_by_cat, parts[1], count)
             elif parts[0] == "maybe_dga":
                 self.trial_dga(parts[1], ip, count)
-            elif parts[0] == "dga_tld":
-                add_to_list(self.dga_tld, parts[1], count)
-            elif parts[0] == "dga_ip":
-                add_to_list(self.dga_ip, parts[1], count)
-            elif parts[0] == "dga_sample":
-                if len(self.dga_sample) < 1000:
-                    self.dga_sample.append(parts[1])
+            elif parts[0] == "p0_count":
+                self.p0_count[int(part[1].strip())] += count
             else:
                 print("Unexpected table in " + result_file + "\n" + line + "\ngiving up")
                 exit(1)
