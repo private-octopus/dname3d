@@ -181,7 +181,7 @@ class namestats:
             elif parts[0] == "maybe_dga":
                 self.trial_dga(parts[1], ip, count)
             elif parts[0] == "p0_count":
-                self.p0_count[int(part[1].strip())] += count
+                self.p0_count[int(parts[1].strip())] += count
             else:
                 print("Unexpected table in " + result_file + "\n" + line + "\ngiving up")
                 exit(1)
