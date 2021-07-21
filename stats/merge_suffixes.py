@@ -30,6 +30,8 @@ def main():
     nst = namestats.namestats(sublist)
     for suffix_file in sys.argv[3:]:
         nst.import_suffix_file(suffix_file)
+        sys.stdout.write(".")
+        sys.stdout.flush()
     nst.suffixes.save_suffix_summary(sys.argv[1],sort=True, eval=True, top_n=nb_saved)
 
 # actual main program, can be called by threads, etc.
