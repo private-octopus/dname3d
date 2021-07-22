@@ -518,11 +518,11 @@ class suffix_summary_file:
                             for ip in range(1, np-1):
                                 isf += len(p[ip-1]) + 1
                                 kept[s[isf:]] = 1
-                else:
-                    if n > 0:
-                        isf = len(p[0]) + 1
-                        self.summary[s[isf:]].hits += sse.hits
-                    self.summary.pop(s)
+                    else:
+                        if n > 0:
+                            isf = len(p[0]) + 1
+                            self.summary[s[isf:]].hits += sse.hits
+                        self.summary.pop(s)
 
     def parse_suffix_summary(self, file_name):
         for line in open(file_name , "rt", encoding="utf-8"):

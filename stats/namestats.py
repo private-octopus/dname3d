@@ -187,7 +187,8 @@ class namestats:
                 exit(1)
                 
     def export_suffix_file(self, suffix_file, need_sort=False):
-        self.suffixes.save_suffix_summary(suffix_file)
+        self.suffixes.prune(0,1)
+        self.suffixes.save_suffix_summary(suffix_file, sort=need_sort)
 
     def import_suffix_file(self, suffix_file):
         self.suffixes.parse_suffix_summary(suffix_file)
