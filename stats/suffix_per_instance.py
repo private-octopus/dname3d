@@ -20,13 +20,13 @@ nb_suffixes = 0
 if sys.argv[3] != "-":
     nb_suffixes = int(sys.argv[3])
 instance_files = sys.argv[4:]
-tracked_suffix = dict()
+tracked_suffix = []
 
 for line in open(tracked_suffix_file , "rt"):
     # assume first argument in csv file
     p = line.split(",")
-    tracked_suffix[p[0]] = 1
-    if len(tracked_suffix) > nb_suffixes:
+    tracked_suffix.append(p[0].strip())
+    if nb_suffixes > 0 and len(tracked_suffix) > nb_suffixes:
         break
 
 f = open(instance_suffix_file , "wt", encoding="utf-8")
