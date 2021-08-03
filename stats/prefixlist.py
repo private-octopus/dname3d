@@ -9,6 +9,7 @@ import hyperloglog
 import gzip
 import traceback
 import functools
+import sys
 
 class prefixline:
     def __init__(self):
@@ -544,17 +545,22 @@ class suffix_summary_file:
         f.close()
                     
     def save_suffix_summary(self, file_name, top_n=0, sort=False, by_hits=False, eval=False):
+        print("Save summary, top_n = ", + top_n)
         if eval:
             self.evaluate()
         flat = list(self.summary.values())
         if top_n > 0 or sort:
+            print(sorting)
             if by_hits:
                 flat.sort(key=hits, reverse=True)
             else:
                 flat.sort(key=functools.cmp_to_key(compare_by_subs), reverse=True)
+            print("sorted")
         if top_n == 0:
             top_n = len(flat)
+        print("saving " + str(top_n))
         suffix_summary_file.save_list(flat[0:top_n], file_name)
+        print("saved")
 
     def top_by_hits(self, file_name, nb_requested):
         self.save_suffix_summary(file_name, top_n=nb_requested, sort=True, eval=True, by_hits=True)
@@ -562,7 +568,83 @@ class suffix_summary_file:
     def top_by_subs(self, file_name, nb_requested=0):
         self.save_suffix_summary(file_name, top_n=nb_requested, sort=True, eval=True)
 
+class suffix_summary_sorter:
+    def __init__(self, hll_m, top_n):
+        self.hll_m = hll_m
+        self.top_n = top_n
+        self.total = 0
+        self.counter = 0
+        self.in_file = []
+        self.summary = dict()
+        self.summary_min = 0
 
+    def sort_and_filter(self):       
+        if self.need_sort:
+            self.list.sort(key=functools.cmp_to_key(compare_by_subs), reverse=True)
 
+    def add_file_entries_to_summary(self):
+        # First add the summary to the in_file list
+        for suffix in self.summary:
+            self.in_file.append(self.summary[suffix])
+        # Sort the file list
+        self.in_file.sort(key=functools.cmp_to_key(compare_by_subs), reverse=True)
+        # Trim to top N
+        if self.top_n > 0:
+            self.in_file = self.in_file[0:self.top_n]
+        # Reset the summary
+        self.summary = dict()
+        if self.top_n <= 0 or len(self.summary) < self.top_n or len(self.in_file) == 0:
+            self.summary_min = 0
+        else:
+            self.summary_min = self.in_file[-1].subs
+        for sse in self.in_file:
+            self.summary[sse.suffix] = sse
+        # Reset the input file
+        self.in_file = []
+        self.counter = 0
 
+    def parse_suffix_summary(self, file_name):
+        # For all the names in the list, check whether they are already
+        # part of the summary, and merge them if they are.
+        # If they are not, and if they are higher than the lowest in 
+        # the summary, retain them in a top 10 list.
+        self.in_file=[]
+        self.counter = 0
+
+        for line in open(file_name , "rt", encoding="utf-8"):
+            sse = suffix_summary_entry("", 0, self.hll_m)
+            if sse.from_text(line):
+                self.total += 1
+                if sse.suffix in self.summary:
+                    self.summary[sse.suffix].merge(sse)
+                    self.summary.evaluate()
+                else:
+                    sse.evaluate()
+                    if sse.subs >= self.summary_min:
+                        self.in_file.append(sse)
+                        self.counter += 1
+                        if self.top_n > 0 and self.counter > 2*self.top_n:
+                            self.add_file_entries_to_summary()
+                            sys.stdout.write("+")
+                            sys.stdout.flush()
+        # End of the loop. Need to add the in_file entries to the summary
+        if len(self.in_file) > 0:
+            self.add_file_entries_to_summary()
+            sys.stdout.write("!")
+            sys.stdout.flush()
+        print("\nAdded " + file_name + ", total: " + str(self.total))
+
+    def save_summary(self, file_name):
+        top_n = self.top_n
+        print("Save summary, top_n = " + str(top_n))
+        flat = list(self.summary.values())
+        if top_n > 0:
+            print("sorting")
+            flat.sort(key=functools.cmp_to_key(compare_by_subs), reverse=True)
+            print("sorted")
+        if top_n == 0:
+            top_n = len(self.list)
+        print("saving " + str(self.top_n))
+        suffix_summary_file.save_list(self.list[0:top_n], file_name)
+        print("saved")
 
