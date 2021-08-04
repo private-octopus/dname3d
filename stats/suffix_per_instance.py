@@ -30,12 +30,13 @@ for line in open(tracked_suffix_file , "rt"):
         break
 
 f = open(instance_suffix_file , "wt", encoding="utf-8")
+f.write("instance,suffix,subs,hits\n")
 for isf in instance_files:
     sf = prefixlist.suffix_summary_file(4, 3)
     sf.parse_suffix_summary(isf)
-    for suffix in tracked_suffix:
+    for sfi in tracked_suffix:
         if sfi in sf.summary:
-            f.write(isf + "," + sfi + "," + str(sf.summary[sfi].subs) + "," + str(sf.summary[sfi].hits))
+            f.write(isf + "," + sfi + "," + str(sf.summary[sfi].subs) + "," + str(sf.summary[sfi].hits) + "\n")
 f.close()
 
 
