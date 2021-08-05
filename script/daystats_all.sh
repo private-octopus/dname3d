@@ -4,8 +4,14 @@ eastwest=$2
 for x in `ls /data/ITHI/results-name/$eastwest/`
 do
 instance=${x/results-}
-echo "Stats for $instance"
-../script/daystats.sh $instance $date $eastwest
+target=~/$instance/suffixes-$date.csv
+if [ -f $target ]; then
+    echo "$target exists"
+else
+    echo "$target not found. Computing stats for $instance";
+    ls -v ~/$instance/$suf*
+    ../script/daystats.sh $instance $date $eastwest;
+fi
 done
 
 
