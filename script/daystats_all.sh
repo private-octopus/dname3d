@@ -9,7 +9,6 @@ if [ -f $target ]; then
     echo "$target exists"
 else
     echo "$target not found. Computing stats for $instance";
-    ls -v ~/$instance/$suf*
     ../script/daystats.sh $instance $date $eastwest;
 fi
 done
