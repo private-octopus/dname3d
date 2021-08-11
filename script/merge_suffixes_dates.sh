@@ -14,7 +14,3 @@ do
         ../script/merge_suffixes.sh $merged $d $homedir $nbsuffix
     fi
 done
-
-
-
-

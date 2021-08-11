@@ -550,7 +550,7 @@ class suffix_summary_file:
             self.evaluate()
         flat = list(self.summary.values())
         if top_n > 0 or sort:
-            print(sorting)
+            print("sorting")
             if by_hits:
                 flat.sort(key=hits, reverse=True)
             else:
