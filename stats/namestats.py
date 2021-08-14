@@ -7,7 +7,7 @@
 import traceback
 import nameparse
 import ipaddress
-import prefixlist
+import suffixes
 import gzip
 import traceback
 
@@ -45,7 +45,7 @@ class namestats:
         self.sum_by_cat = dict()
         self.maybe_dga = dict()
         self.dga_count = 0
-        self.suffixes = prefixlist.suffix_summary_file(4, 3)
+        self.suffixes = suffixes.suffix_summary_file(4, 3)
         self.sublist = sublist
         self.p0_count = []
         for i in range(0,64):

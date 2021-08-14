@@ -5,7 +5,7 @@
 
 
 import sys
-import prefixlist
+import suffixes
 import nameparse
 import compare_file_test
 import traceback
@@ -46,7 +46,7 @@ suffix_out = sys.argv[1]
 suffix_ref = sys.argv[2]
 files = sys.argv[3:]
 
-sub_s = prefixlist.suffix_summary_file(4,3)
+sub_s = suffixes.suffix_summary_file(4,3)
 
 for file_name in files:
      load_logfile(sub_s, file_name)

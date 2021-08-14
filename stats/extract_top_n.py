@@ -7,7 +7,7 @@
 
 
 import sys
-import prefixlist
+import suffixes
 import traceback
 import time
 import concurrent.futures
@@ -26,7 +26,7 @@ def main():
         exit(1)
     nb_saved = int(sys.argv[2])
 
-    pss = prefixlist.suffix_summary_sorter(4, nb_saved)
+    pss = suffixes.suffix_summary_sorter(4, nb_saved)
     for suffix_file in sys.argv[3:]:
         pss.parse_suffix_summary(suffix_file)
         sys.stdout.write(".")

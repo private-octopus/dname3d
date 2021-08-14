@@ -11,7 +11,6 @@ import namestats
 import traceback
 import nameparse
 import ipaddress
-import prefixlist
 import gzip
 import sys
 import time

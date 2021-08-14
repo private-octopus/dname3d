@@ -11,7 +11,7 @@ import traceback
 import time
 import concurrent.futures
 import os
-import prefixlist
+import suffixes
 
 # main loop
 instance_suffix_file = sys.argv[1]
@@ -32,7 +32,7 @@ for line in open(tracked_suffix_file , "rt"):
 f = open(instance_suffix_file , "wt", encoding="utf-8")
 f.write("instance,suffix,subs,hits\n")
 for isf in instance_files:
-    sf = prefixlist.suffix_summary_file(4, 3)
+    sf = suffixes.suffix_summary_file(4, 3)
     sf.parse_suffix_summary(isf)
     for sfi in tracked_suffix:
         if sfi in sf.summary:
