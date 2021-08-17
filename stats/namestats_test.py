@@ -2,6 +2,11 @@
 # coding=utf-8
 #
 # Unit test of the namestats module
+#
+# Expect these tests to work:
+#
+# py namestats_test.py ../tmp/result_out.csv ../data/dga13_test_results.csv ../tmp/details_out.csv ../data/dga13_test_suffixes.csv ../data/dga13_subnets.txt ../data/dga13_test_names.csv
+# py namestats_test.py ../tmp/result_out.csv ../data/suffix_test_2_results.csv ../tmp/details_out.csv ../data/suffix_test_2_ref.csv ../data/dga13_subnets.txt ../data/suffix_test_names.csv ../data/suffix_test_names_2.csv
 
 import sys
 import namestats
@@ -32,7 +37,7 @@ stats.final_dga()
 # Perform sort and evaluation before saving the output, 
 # so results are easier to compare
 stats.export_result_file(result_out, do_sort=True)
-stats.suffixes.top_by_subs(suffix_out)
+stats.suffixes.save(suffix_out)
 # Compare outouts to expected result
 if not compare_file_test.compare_files(result_out, result_ref) or \
    not compare_file_test.compare_files(suffix_out, suffix_ref):

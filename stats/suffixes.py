@@ -434,7 +434,8 @@ def compare_suffix_details(item, other):
 # Extract details from name files and a list of suffixes.
 #
 # If this is just a second pass, the list of suffixes is preset by
-# a call to `init_suffixes`. If it is not, then 
+# a call to `init_suffixes`. If it is not, then all the prefixes
+# are loaded in memory, but only the top 10,000 will be stored.
 
 class suffix_details_file:
     def __init__(self, hll_k, max_suffix_parts):

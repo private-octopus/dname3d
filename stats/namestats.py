@@ -45,7 +45,7 @@ class namestats:
         self.sum_by_cat = dict()
         self.maybe_dga = dict()
         self.dga_count = 0
-        self.suffixes = suffixes.suffix_summary_file(4, 3)
+        self.suffixes = suffixes.suffix_details_file(4, 3)
         self.sublist = sublist
         self.p0_count = []
         for i in range(0,64):
@@ -66,7 +66,7 @@ class namestats:
                     add_to_list(self.sum_by_cat, "dga13", 1)
                 else:
                     add_to_list(self.sum_by_cat, "tld", 1)
-                    self.suffixes.add_name(name, 1)
+                    self.suffixes.add_name(name, 1, ip)
         self.maybe_dga = dict()
 
     def trial_dga(self, name, ip, count):
@@ -110,7 +110,7 @@ class namestats:
                 if nb_parts > 2:
                     self.trial_dga(parts[-2] + "." + parts[-1], "-", 0)
                 add_to_list(self.sum_by_cat, "tld", count)
-                self.suffixes.add_name(name, count)
+                self.suffixes.add_name(name, count, ip)
 
     def load_logline(self, line):
         nl = nameparse.nameline()
@@ -187,8 +187,7 @@ class namestats:
                 exit(1)
                 
     def export_suffix_file(self, suffix_file, need_sort=False):
-        self.suffixes.prune(0,1)
-        self.suffixes.save_suffix_summary(suffix_file, sort=need_sort)
+        self.suffixes.save(suffix_file)
 
     def import_suffix_file(self, suffix_file):
-        self.suffixes.parse_suffix_summary(suffix_file)
+        self.suffixes.parse(suffix_file)
