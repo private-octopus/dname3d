@@ -72,6 +72,8 @@ def main():
 
     # prepare a set of sublists and result names for each process.
     process_left = nb_process
+    if nb_process > nb_files and 2*nb_process < nb_files:
+        process_left = int((nb_files+1)/2)
     if temp_prefix == "-":
         process_left = 1
     files_left = nb_files
