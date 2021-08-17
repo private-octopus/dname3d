@@ -10,8 +10,9 @@ import gzip
 import traceback
 import functools
 import sys
+import ipaddress
 
-# Unified list of prefixes
+# Unified list of suffixes
 #
 # There is a name file for each instance and each slice of time. The file contains lists of names,
 # counts and attributes. The code assumes that a first pass is done to only retain the valid names.
@@ -83,7 +84,6 @@ def compare_by_subs(item, other):
         return 1
     else:
         return 0
-
 
 class suffix_summary_file:
     def __init__(self, hll_m, max_suffix_parts):
@@ -275,3 +275,236 @@ class suffix_summary_sorter:
         suffix_summary_file.save_list(self.list[0:top_n], file_name)
         print("saved")
 
+
+# Detailed analysis of suffixes
+# 
+# The suffix summaries above provide a first pass evaluation of suffixes.
+# This firt pass is used to extract a list of "top N" suffixes, for which more data
+# is collected, ending up with one line per instance and day of data collection:
+#
+# * value of suffix
+# * total number of references to names within that suffix (as in summary)
+# * estimated number of sub-domains for the suffix (as in summary)
+# * estimated number of IP addresses for the suffix
+# * estimated number of subnets (/24 or /48) for the suffix
+#
+# Each estimated number is represented by an HyperLogLog object, and
+# HyperLogLog logic is used when computing aggregates.
+#
+# This is computed by first computing details for each instance, and then
+# obtaining a summary file.
+#
+# There is a plausible discussion of whether to aggregate by city or country
+# rather than instance. Cities and countries can be parsed from the
+# instance name, so this can be done during the aggregation phase.
+#
+# There is also a discussion of whether we want 2 phases or single phase.
+# Single phase is much better for operational purposes. Just process files
+# for each instance every day. Once processed, all name stats can be drown
+# from there. But we get an issue of precision. We want eventually to list
+# traffic for the top N suffixes for a month, but we don't know which these
+# N suffixes will be. In two passes, we know and we can count. In one pass,
+# we could try to keep everything, but that requires a whole lot of
+# bandwidth. Or we could for each day keep the top-X, with X >> N.
+#
+# In practice, setting X to a few thousands and N to a few hundreds appears
+# practical. But if we keep the first few thousands, we have two plausible
+# metrics: more hits, or more subs. Keeping the most subs appears simpler.
+#
+# In usage, we start with parallel processing of all recodings for an
+# instance and a day. There are 24*12 = 288 slices per day, and the
+# top N for each slice could be very different if there is time
+# dependency. We want to keep many slices. So maybe in the first pass
+# we keep everything -- but we find a way to eliminate noise. 
+#
+# But then, do we need a new class for that? If just one pass, then
+# why not just add the IP address statistics to the main file? This
+# would benefit from keeping the tests and the scripts unchanged.
+# 
+
+class suffix_detail_entry:
+    def __init__(self, suffix, hll_k):
+        self.suffix = suffix
+        self.hits = 0
+        self.subs = 0
+        self.ips = 0
+        self.nets = 0
+        self.sub_hll = hyperloglog.hyperloglog(hll_k)
+        self.ip_hll = hyperloglog.hyperloglog(hll_k)
+        self.net_hll = hyperloglog.hyperloglog(hll_k)
+
+    def add_subname(self, name_part, hits, ip):
+        if name_part != "":
+            self.sub_hll.add(name_part)
+            self.subs = 0
+        ip_is_bad = False
+        ipa = ipaddress.ip_address(ip)
+        if ipa.version == 4:
+            isn = ipaddress.ip_network(ip + "/24", strict=False)
+        elif ipa.version == 6:
+            isn = ipaddress.ip_network(ip + "/48", strict=False)
+        else:
+            isn = ipaddress.ip_network("::/64")
+        if not ip_is_bad:
+            self.ip_hll.add(str(ipa))
+            self.net_hll.add(str(isn))
+            self.ips = 0
+            self.nets = 0
+        self.hits += hits
+
+    def merge(self, other):
+        self.hits += other.hits
+        self.sub_hll.merge(other.sub_hll)
+        self.ip_hll.merge(other.ip_hll)
+        self.net_hll.merge(other.net_hll)
+        self.subs = 0
+        self.ips = 0
+        self.nets = 0
+    def evaluate(self):
+        if self.subs == 0:
+            self.subs = self.sub_hll.evaluate()
+        if self.ips == 0:
+            self.ips = self.ip_hll.evaluate()
+        if self.nets == 0:
+            self.nets = self.net_hll.evaluate()
+    def suffix_header(self):
+        s = "Suffix,Hits,Subs,IPs,Nets,"
+        s += self.sub_hll.header_full_text("S") + ","
+        s += self.ip_hll.header_full_text("I") + ","
+        s += self.ip_hll.header_full_text("N")
+        return s
+    def to_text(self):
+        self.evaluate()
+        s = self.suffix + ","
+        s += str(self.hits) + ","
+        s += str(self.subs) + ","
+        s += str(self.ips) + ","
+        s += str(self.nets) + ","
+        s += self.sub_hll.to_full_text() + ","
+        s += self.ip_hll.to_full_text() + ","
+        s += self.net_hll.to_full_text()
+        return s
+    def from_text(self, s):
+        success = True
+        try:
+            p = s.split(",")
+            self.suffix = p[0].strip()
+            self.hits = int(p[1])
+            self.subs = int(p[2])
+            self.ips = int(p[3])
+            self.nets = int(p[4])
+            ix = 5
+            self.sub_hll.from_full_parts(p[ix:])
+            ix += self.sub_hll.m
+            self.ip_hll.from_full_parts(p[ix:])
+            ix += self.ip_hll.m
+            self.net_hll.from_full_parts(p[ix:])
+        except:
+            success = False
+        return success
+
+def compare_suffix_details(item, other):
+    item.evaluate()
+    other.evaluate()
+    r = 0
+    if item.subs < other.subs:
+        r = -1
+    elif item.subs > other.subs:
+        r = 1
+    elif item.nets < other.nets:
+        r = -1
+    elif item.nets > other.nets:
+        r = 1
+    elif item.ips < other.ips:
+        r = -1
+    elif item.ips > other.ips:
+        r = 1
+    elif item.hits < other.hits:
+        r = -1
+    elif item.hits > other.hits:
+        r = 1
+    elif item.suffix < other.suffix:
+        r = -1
+    elif item.suffix > other.suffix:
+        r = 1
+    else:
+        r = 0
+    return r
+
+# Extract details from name files and a list of suffixes.
+#
+# If this is just a second pass, the list of suffixes is preset by
+# a call to `init_suffixes`. If it is not, then 
+
+class suffix_details_file:
+    def __init__(self, hll_k, max_suffix_parts):
+        self.suffixes = dict()
+        self.hll_k = hll_k
+        self.max_suffix_parts = max_suffix_parts
+        self.dynamic_list = True
+
+    def init_suffixes(self, suffix_list):
+        for suffix in suffix_list:
+            self.suffixes[suffix] = suffix_detail_entry(suffix, self.hll_k)
+        self.dynamic_list = False
+
+    def add_to_suffix(self, suffix, subname, hits, ip):
+        if suffix in self.suffixes:
+            self.suffixes[suffix].add_subname(subname, hits, ip)
+        elif self.dynamic_list:
+            self.suffixes[suffix] = suffix_detail_entry(suffix, self.hll_k)
+            self.suffixes[suffix].add_subname(subname, hits, ip)
+
+    def add_name(self, name, hits, ip):
+        name_parts = name.split(".")
+        np = len(name_parts)
+        i_sfn = 0
+        i_start = 0
+
+        # if name is short, add an empty name, which means counting
+        # just the IP and subnet hits.
+        if np <= self.max_suffix_parts:
+            self.add_to_suffix(name, "", hits, ip)
+
+        else:
+            # trim name so it be at most max_suffix_parts + 1
+            while i_start + self.max_suffix_parts + 1 < np:
+                i_sfn += len(name_parts[i_start])+1
+                i_start += 1
+        # Record all the embedded suffixes
+        while i_start + 1 < np:
+            i_sfn += len(name_parts[i_start])+1
+            suffix = name[i_sfn:]
+            self.add_to_suffix(suffix, name_parts[i_start], hits, ip)
+            i_start += 1
+
+    def evaluate(self):
+        for suffix in self.suffixes:
+           self.suffixes[suffix].evaluate()
+
+    def save(self, file_name):
+        # start with sorting by relevance, then limit
+        # to a maximum size of 10,000
+        suffix_list = list(self.suffixes.values())
+        suffix_list.sort(key=functools.cmp_to_key(compare_suffix_details), reverse=True)
+        if self.dynamic_list and len(suffix_list) > 10000:
+            suffix_list = suffix_list[0:10000]
+        with open(file_name , "wt", encoding="utf-8") as f:
+            if len(suffix_list) > 0:
+                f.write(suffix_list[0].suffix_header() + "\n")
+            for suffix in suffix_list:
+                f.write(suffix.to_text() + "\n")
+
+    def parse(self, file_name):
+        for line in open(file_name , "rt", encoding="utf-8"):
+            sde = suffix_detail_entry("", self.hll_k)
+            if sde.from_text(line):
+                if sde.suffix in self.suffixes:
+                    self.suffixes[sde.suffix].merge(sde)
+                else:
+                    self.suffixes[sde.suffix] = sde
+
+# Prepare monthly per instance daily reports.
+#
+# This is done by aggregating multiple files corresponding to 
+# the same instance but multiple days.

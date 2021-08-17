@@ -85,6 +85,27 @@ class hyperloglog:
             self.b[x] = int(parts[p+1])
             p += 2
 
+    def to_full_text(self):
+        s = ""
+        for i in range(0,self.m):
+                if s != "":
+                    s += ","
+                s += str(self.b[i])
+        return s
+    
+    def from_full_parts(self, parts):
+        s = ""
+        for p in range(0,self.m):
+            if p <= len(parts):
+                self.b[p] = int(parts[p])
+            else:
+                self.b[p] = 0
 
-
+    def header_full_text(self, prefix):
+        s = ""
+        for i in range(0, self.m):
+            if s != "":
+                s += ","
+            s += prefix + str(i)
+        return s
 
