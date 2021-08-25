@@ -483,13 +483,25 @@ class suffix_details_file:
         for suffix in self.suffixes:
            self.suffixes[suffix].evaluate()
 
+    def top_n(self, nb_top):
+        suffix_list = list(self.suffixes.values())
+        suffix_list.sort(key=functools.cmp_to_key(compare_suffix_details), reverse=True)
+        if self.dynamic_list and len(suffix_list) > nb_top:
+            suffix_list = suffix_list[0:nb_top]
+        return suffix_list
+
+    def trim(self, nb_top):
+        if len(self.suffixes) > nb_top:
+            suffix_list = self.top_n(nb_top)
+            trimmed = dict()
+            for sde in suffix_list:
+                trimmed[sde.suffix] = sde
+            self.suffixes = trimmed
+
     def save(self, file_name):
         # start with sorting by relevance, then limit
         # to a maximum size of 10,000
-        suffix_list = list(self.suffixes.values())
-        suffix_list.sort(key=functools.cmp_to_key(compare_suffix_details), reverse=True)
-        if self.dynamic_list and len(suffix_list) > 10000:
-            suffix_list = suffix_list[0:10000]
+        suffix_list = self.top_n(10000)
         with open(file_name , "wt", encoding="utf-8") as f:
             if len(suffix_list) > 0:
                 f.write(suffix_list[0].suffix_header() + "\n")
@@ -505,7 +517,81 @@ class suffix_details_file:
                 else:
                     self.suffixes[sde.suffix] = sde
 
+    def merge(self, other):
+        for suffix in other.suffixes:
+            if suffix in self.suffixes:
+                self.suffixes[suffix].merge(other.suffixes[suffix])
+            else:
+                self.suffixes[suffix] = other.suffixes[suffix]
+
+
 # Prepare monthly per instance daily reports.
 #
 # This is done by aggregating multiple files corresponding to 
 # the same instance but multiple days.
+
+class suffix_report:
+    def __init__(self, hll_k, max_suffix_parts, nb_top):
+        self.hll_k = hll_k
+        self.max_suffix_parts = max_suffix_parts
+        self.nb_top = nb_top
+        self.top_list = suffix_details_file(hll_k, max_suffix_parts)
+        self.date_list = dict()
+        self.city_list = dict()
+
+    def get_city_date_from_file_name(file_name):
+        # Expect file name such as aa01-tw-ntc-suffixes-20210721.csv.
+        # Parse the names to extract city and date
+        p0 = file_name.split("/")
+        if len(p0) <= 1:
+            # This can happen if running on windows
+            p0 = file_name.split("\\")
+        p1 = p0[-1].split(".")
+        parts = p1[0].split("-")
+        date = parts[4].strip()
+        city = parts[1] + "-" + parts[2]
+        return date,city
+
+    def set_city_date_lists(self, file_list):
+        for file_name in file_list:
+            # Expect file name such as aa01-tw-ntc-suffixes-20210721.csv.
+            # Parse the names to extract city and date
+            date,city = suffix_report.get_city_date_from_file_name(file_name)
+            if not date in self.date_list:
+                self.date_list[date] = suffix_details_file(self.hll_k, self.max_suffix_parts)
+            if not city in self.city_list:
+                self.city_list[city] = suffix_details_file(self.hll_k, self.max_suffix_parts)
+
+    def compute_city_or_date_report(hll_k, max_suffix_parts, city, date, file_list, output_file):
+        details_file = suffix_details_file(hll_k, max_suffix_parts)
+        for file_name in file_list:
+            f_date,f_city = suffix_report.get_city_date_from_file_name(file_name)
+            if (city != "" and f_city == city) or (date != "" and f_date == date):
+                details_file.parse(file_name)
+        details_file.save(output_file)
+   
+    def get_top_domains(self):
+        self.top_list = suffix_details_file(self.hll_k, self.max_suffix_parts)
+        for date in self.date_list:
+            print("Merging " + date)
+            self.top_list.merge(self.date_list[date])
+        self.top_list.trim(self.nb_top)
+
+    def write_suffix_date(f, date, city, sde):
+        sde.evaluate()
+        f.write(sde.suffix + "," + date + "," + city + "," + str(sde.hits) \
+            + "," + str(sde.subs) + "," + str(sde.ips) + "," + str(sde.nets) + "\n")
+
+    def save_top_details(self, file_name):
+        with open(file_name , "wt", encoding="utf-8") as f:
+            f.write("Suffix,date,city,hits,subs,ips,nets\n")
+            for suffix in self.top_list.suffixes:
+                suffix_report.write_suffix_date(f, "all", "all", self.top_list.suffixes[suffix]);
+                for date in self.date_list:
+                    dld = self.date_list[date]
+                    if suffix in dld.suffixes:
+                        suffix_report.write_suffix_date(f, date, "all", dld.suffixes[suffix]);
+                for city in self.city_list:
+                    cld = self.city_list[city]
+                    if suffix in cld.suffixes:
+                        suffix_report.write_suffix_date(f, "all", city, cld.suffixes[suffix]);
