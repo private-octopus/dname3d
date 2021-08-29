@@ -24,7 +24,7 @@ sds.load_detail_file(details)
 sds.get_samples()
 
 # save the result files
-sds.sample.save(result_file)
+sds.samples.save(result_file)
 
 # Compare outouts to expected result
 if not compare_file_test.compare_files(audited, audited_ref):
