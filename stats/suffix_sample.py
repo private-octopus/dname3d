@@ -180,7 +180,7 @@ class suffix_sample_list:
             f.write("suffix" + "," + "name" + "," + suffix_sample_data.csv_head() + "\n")
             for suffix in self.suffixes:
                 for name in self.suffixes[suffix].samples:
-                    f.write(suffix + "," + name + "," + self.suffixes[suffix].samples[name].to_csv + "\n")
+                    f.write(suffix + "," + name + "," + self.suffixes[suffix].samples[name].to_csv() + "\n")
 
 class suffix_city_date:
     def __init__(self, suffix):
@@ -276,7 +276,7 @@ class suffix_details_sample:
             for trials in range(0,5):
                 # pick one at random
                 suffix = self.rd.choice(candidate_suffixes)
-                print("Candidate: " + suffix)
+                print("Candidate: " + suffix + " (" + str(len(self.samples.suffixes[suffix].samples)) + ")")
                 # select one of the instances
                 instance = self.instance_for_city(self.suffixes[suffix].city_max)
                 # compute the directory prefix and look for files that start with the date
