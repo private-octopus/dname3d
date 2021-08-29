@@ -1,7 +1,7 @@
 # test of suffix sample
 #
 # Expected to run the test as:
-# py .\suffix_sample_detail_test.py 2 ..\tmp\audit_details.csv ..\data\audit_details_ref.csv
+# py .\suffix_sample_detail_test.py 5 ..\data\results- ..\tmp\audit_details.csv ..\data\audit_details_ref.csv ..\data\detail_instances.txt ..\data\suffix_report_ref.csv
 
 import sys
 import suffix_sample
