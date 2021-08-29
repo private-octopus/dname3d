@@ -13,6 +13,7 @@ class nameline:
         self.name_type = ""
         self.count = 0
         self.ip = ""
+        self.rr_type = ""
 
     def copy(self):
         cp = nameline()
@@ -21,12 +22,13 @@ class nameline:
         cp.name_type = self.name_type
         cp.count = self.count
         cp.ip = self.ip
+        cp.rr_type = self.rr_type
         return cp
 
     def from_csv(self, line):
         ret = False
         p = line.split(",")
-        if len(p) >= 4 and len(p) <= 5:
+        if len(p) >= 4 and len(p) <= 6:
             self.name = p[0]
             try:
                 self.is_nx = int(p[1])
@@ -39,16 +41,18 @@ class nameline:
                     ret = True
             except:
                 self.count = 0
-            if len(p) == 5:
+            if len(p) >= 5:
                 self.ip = p[4].strip()
+            if len(p) >= 6:
+                self.rr_type = p[5].strip()
         return ret
 
     def to_csv(self):
-        t = self.name + "," + str(self.is_nx) + "," + self.name_type + "," + str(self.count) + "," + self.ip + "\n"
+        t = self.name + "," + str(self.is_nx) + "," + self.name_type + "," + str(self.count) + "," + self.ip + "," + self.rr_type +  "\n"
         return t
 
     def csv_head():
-        return("name, is_nx, name_type, count, ip\n")
+        return("name, is_nx, name_type, count, ip, rr_type\n")
 
 class namelist:
     def __init__(self):

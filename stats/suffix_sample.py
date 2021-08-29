@@ -83,6 +83,21 @@
 
 import random
 import nameparse
+import os
+
+class suffix_sample_data:
+    def __init__(self, fqdn, ip, rr_type):
+        self.fqdn = fqdn
+        self.ip = ip
+        self.rr_type = rr_type
+
+    def to_csv(self):
+        s = self.fqdn + "," + self.ip + "," + self.rr_type 
+        return s
+
+    def csv_head():
+        s = "fqdn" + "," + "ip" + "," + "rr_type"
+        return s
 
 class suffix_sample:
     def __init__(self, suffix, nb_samples, rd):
@@ -92,17 +107,17 @@ class suffix_sample:
         self.pop_size = 0
         self.rd = rd
 
-    def add(self, name, ip):
+    def add(self, name, fqdn, ip, rr_type):
         if not name in self.samples:
             if len(self.samples) < self.nb_samples:
-                self.samples[name] = ip
+                self.samples[name] = suffix_sample_data(fqdn, ip, rr_type)
             else:
                 self.pop_size += 1
                 x = self.rd.randrange(self.pop_size)
                 if x < self.nb_samples:
                     key_out = self.rd.choice(list(self.samples.keys()))
                     self.samples.pop(key_out)
-                    self.samples[name] = ip
+                    self.samples[name] = suffix_sample_data(fqdn, ip, rr_type)
 
 class suffix_sample_list:
     def __init__(self, nb_samples):
@@ -114,7 +129,7 @@ class suffix_sample_list:
         if not suffix in self.suffixes:
             self.suffixes[suffix] = suffix_sample(suffix, self.nb_samples, self.rd)
 
-    def add(self, name, ip):
+    def add(self, name, ip, rr_type):
         # find all the embedded suffixes, and if they belong to the list
         # add that to the samples
         name_parts = name.split(".")
@@ -126,19 +141,144 @@ class suffix_sample_list:
             i_sfn += len(name_parts[i_start])+1
             suffix = name[i_sfn:]
             if suffix in self.suffixes:
-                self.suffixes[suffix].add(name_parts[i_start], ip)
+                self.suffixes[suffix].add(name_parts[i_start], name, ip, rr_type)
             i_start += 1
 
     def add_log_file(self, file_name):
         for line in open(file_name, "rt", encoding="utf-8"):
             nl = nameparse.nameline()
             if nl.from_csv(line) and nl.name_type == "tld":
-                self.add(nl.name, nl.ip)
+                self.add(nl.name, nl.ip, nl.rr_type)
 
     def save(self, file_name):
         with open(file_name , "wt", encoding="utf-8") as f:
-            f.write("suffix" + "," + "name" + "," + "ip" + "\n")
+            f.write("suffix" + "," + "name" + "," + suffix_sample_data.csv_head() + "\n")
             for suffix in self.suffixes:
                 for name in self.suffixes[suffix].samples:
-                    f.write(suffix + "," + name + "," + self.suffixes[suffix].samples[name] + "\n")
+                    f.write(suffix + "," + name + "," + self.suffixes[suffix].samples[name].to_csv + "\n")
+
+class suffix_city_date:
+    def __init__(self, suffix):
+        self.suffix = suffix
+        self.city_max = ""
+        self.city_max_subs = 0
+        self.date_max = ""
+        self.date_max_subs = 0
+        self.city_present = True
+
+
+class suffix_details_sample:
+    def __init__(self, nb_samples, dir_prefix):
+        self.samples = suffix_sample_list(nb_samples)
+        self.dir_prefix = dir_prefix
+        self.suffixes = dict()
+        self.instances = []
+        self.already_tried = dict()
+        self.rd = random.Random(987654321)
+
+    def load_instances(self, file_name):
+        # get the instances supported on this server, and the corresponding cities
+        for line in open(file_name , "rt", encoding="utf-8"):
+            self.instances.append(line.strip())
+        pass
+
+    def instance_for_city(self, city):
+        selected = ""
+        available = []
+        # find an instance for the target city. If there are several,
+        # pick one at random
+        for instance in self.instances:
+            if instance.endswith(city):
+                available.append(instance)
+        if len(available) > 0:
+            selected = self.rd.choice(available)
+        return selected
+
+    def load_detail_file(self, file_name):
+        # Assume detail file of the form
+        # Suffix,date,city,hits,subs,ips,nets
+        # as produced by the suffix_report
+        #
+        # Read the file, extract a list of suffixes as well as the city and date with most names
+        for line in open(file_name , "rt", encoding="utf-8"):
+            is_good = False
+            subs = 0
+            try:
+                parts = line.split(",")
+                suffix = parts[0].strip()
+                date = parts[1].strip()
+                city = parts[2].strip()
+                subs = int(parts[4])
+                is_good = True
+            except:
+                pass
+            if is_good and subs > 0:
+                if not suffix in self.suffixes:
+                    self.suffixes[suffix] = suffix_city_date(suffix)
+                if city != "all" and self.suffixes[suffix].city_max_subs < subs:
+                    self.suffixes[suffix].city_max = city
+                    self.suffixes[suffix].city_max_subs = subs
+                if date != "all" and self.suffixes[suffix].date_max_subs < subs:
+                    self.suffixes[suffix].date_max = date
+                    self.suffixes[suffix].date_max_subs = subs
+        # Check that there is an instance for the top city for the suffix,
+        # otherwise remove that entry from the list.
+        if len(self.instances) > 0:
+            suffix_list = list(self.suffixes.keys())
+            for suffix in suffix_list:
+                if self.instance_for_city(self.suffixes[suffix].city_max) == "":
+                    self.suffixes.pop(suffix)
+        # initialize the sampling with the selected suffixes
+        for suffix in self.suffixes:
+            self.samples.add_suffix(suffix)
+
+
+    def get_candidate(self):
+        candidate = ""
+        # find the suffixes for which we still need samples
+        candidate_suffixes = []
+        for suffix in self.suffixes:
+            if len(self.samples.suffixes[suffix].samples) < self.samples.nb_samples:
+                candidate_suffixes.append(suffix)
+        if len(candidate_suffixes) > 0:
+            # Try a couple of different possibilities
+            for trials in range(0,5):
+                # pick one at random
+                suffix = self.rd.choice(candidate_suffixes)
+                # select one of the instances
+                instance = self.instance_for_city(self.suffixes[suffix].city_max)
+                # compute the directory prefix and look for files that start with the date
+                path = self.dir_prefix + instance
+                file_list = []
+                for x in os.listdir(path):
+                    if x.startswith(self.suffixes[suffix].date_max):
+                        y = os.path.join(path, x)
+                        if not y in self.already_tried:
+                            file_list.append(y)
+                if len(file_list) > 0:
+                    candidate = self.rd.choice(file_list)
+        return candidate
+
+    def get_samples(self):
+        while True:
+            candidate = self.get_candidate()
+            if candidate == "":
+                break
+            self.already_tried[candidate] = True
+            self.samples.add_log_file(candidate)
+
+    def save(self, file_name):
+        self.samples.save(file_name)
+
+    def audit_details(self, file_name):
+        with open(file_name, "wt") as f:
+            for suffix in self.suffixes:
+                f.write(suffix + "," + \
+                       self.suffixes[suffix].city_max + "," + str(self.suffixes[suffix].city_max_subs) + "," + \
+                       self.suffixes[suffix].date_max + "," + str(self.suffixes[suffix].date_max_subs) + "\n")
+            for sample_suffix in self.samples.suffixes:
+                f.write(sample_suffix + ",,,,\n")
+            for suffix in self.samples.suffixes:
+                for name in self.samples.suffixes[suffix].samples:
+                    f.write(suffix + "," + name + "," + self.samples.suffixes[suffix].samples[name].to_csv() + "\n")
 
