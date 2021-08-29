@@ -84,6 +84,8 @@
 import random
 import nameparse
 import os
+import gzip
+import traceback
 
 class suffix_sample_data:
     def __init__(self, fqdn, ip, rr_type):
@@ -144,11 +146,31 @@ class suffix_sample_list:
                 self.suffixes[suffix].add(name_parts[i_start], name, ip, rr_type)
             i_start += 1
 
-    def add_log_file(self, file_name):
-        for line in open(file_name, "rt", encoding="utf-8"):
-            nl = nameparse.nameline()
-            if nl.from_csv(line) and nl.name_type == "tld":
-                self.add(nl.name, nl.ip, nl.rr_type)
+    def add_log_line(self, line):
+        nl = nameparse.nameline()
+        if nl.from_csv(line) and nl.name_type == "tld":
+            self.add(nl.name, nl.ip, nl.rr_type)
+
+    def load_logfile_csv(self, logfile):
+        for line in open(logfile , "rt", encoding="utf-8"):
+            self.add_log_line(line)
+
+    def load_logfile_gz(self, logfile):
+        try:
+            with gzip.open(logfile,'rt') as fin: 
+                for line in fin:
+                    self.add_log_line(line)
+        except Exception as e:
+            traceback.print_exc()
+            print("Cannot process compressed file <" + logfile  + ">\nException: " + str(e))
+            print("Giving up");
+            exit(1) 
+
+    def add_log_file(self, logfile):
+        if logfile.endswith(".gz"):
+            self.load_logfile_gz(logfile)
+        else:
+            self.load_logfile_csv(logfile)
 
     def save(self, file_name):
         with open(file_name , "wt", encoding="utf-8") as f:
