@@ -157,9 +157,12 @@ class suffix_sample_list:
 
     def load_logfile_gz(self, logfile):
         try:
+            nb_lines = 0
             with gzip.open(logfile,'rt') as fin: 
                 for line in fin:
                     self.add_log_line(line)
+                    nb_lines += 1
+                print(logfile + ": " + str(nb_lines))
         except Exception as e:
             traceback.print_exc()
             print("Cannot process compressed file <" + logfile  + ">\nException: " + str(e))
@@ -254,6 +257,7 @@ class suffix_details_sample:
             suffix_list = list(self.suffixes.keys())
             for suffix in suffix_list:
                 if self.instance_for_city(self.suffixes[suffix].city_max) == "":
+                    print("Popping out: " + suffix)
                     self.suffixes.pop(suffix)
         # initialize the sampling with the selected suffixes
         for suffix in self.suffixes:
@@ -272,6 +276,7 @@ class suffix_details_sample:
             for trials in range(0,5):
                 # pick one at random
                 suffix = self.rd.choice(candidate_suffixes)
+                print("Candidate: " + suffix)
                 # select one of the instances
                 instance = self.instance_for_city(self.suffixes[suffix].city_max)
                 # compute the directory prefix and look for files that start with the date
