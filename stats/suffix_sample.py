@@ -173,16 +173,20 @@ class suffix_details_sample:
         self.dir_prefix = dir_prefix
         self.suffixes = dict()
         self.instances = []
+        self.instance_loaded = False
         self.already_tried = dict()
         self.rd = random.Random(987654321)
 
-    def load_instances(self, file_name):
-        # get the instances supported on this server, and the corresponding cities
-        for line in open(file_name , "rt", encoding="utf-8"):
-            self.instances.append(line.strip())
-        pass
+    def load_instances(self):
+        if not self.instance_loaded:
+            for x in os.listdir(self.dir_prefix):
+                if x.startswith("results-"):
+                    self.instances.append(x)
+            self.instance_loaded = True
+
 
     def instance_for_city(self, city):
+        self.load_instances()
         selected = ""
         available = []
         # find an instance for the target city. If there are several,
@@ -223,6 +227,7 @@ class suffix_details_sample:
                     self.suffixes[suffix].date_max_subs = subs
         # Check that there is an instance for the top city for the suffix,
         # otherwise remove that entry from the list.
+        self.load_instances()
         if len(self.instances) > 0:
             suffix_list = list(self.suffixes.keys())
             for suffix in suffix_list:
@@ -248,7 +253,7 @@ class suffix_details_sample:
                 # select one of the instances
                 instance = self.instance_for_city(self.suffixes[suffix].city_max)
                 # compute the directory prefix and look for files that start with the date
-                path = self.dir_prefix + instance
+                path =  os.path.join(self.dir_prefix, instance)
                 file_list = []
                 for x in os.listdir(path):
                     if x.startswith(self.suffixes[suffix].date_max):
@@ -281,4 +286,6 @@ class suffix_details_sample:
             for suffix in self.samples.suffixes:
                 for name in self.samples.suffixes[suffix].samples:
                     f.write(suffix + "," + name + "," + self.samples.suffixes[suffix].samples[name].to_csv() + "\n")
+            for instance in self.instances:
+                f.write(instance +  ",,,,\n")
 

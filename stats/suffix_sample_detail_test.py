@@ -1,7 +1,7 @@
 # test of suffix sample
 #
 # Expected to run the test as:
-# py .\suffix_sample_detail_test.py 5 ..\data\results- ..\tmp\audit_details.csv ..\data\audit_details_ref.csv ..\data\detail_instances.txt ..\data\suffix_report_ref.csv
+# py .\suffix_sample_detail_test.py 5 ..\data\ ..\tmp\audit_details.csv ..\data\audit_details_ref.csv ..\data\suffix_report_ref.csv
 
 import sys
 import suffix_sample
@@ -14,13 +14,9 @@ nb_samples = int(sys.argv[1])
 dir_prefix = sys.argv[2]
 audited = sys.argv[3]
 audited_ref = sys.argv[4]
-instances = sys.argv[5]
-details = sys.argv[6]
+details = sys.argv[5]
 
 sds = suffix_sample.suffix_details_sample(nb_samples, dir_prefix)
-
-# load instances
-sds.load_instances(instances)
 
 # load details file
 sds.load_detail_file(details)
