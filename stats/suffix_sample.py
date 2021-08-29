@@ -217,7 +217,7 @@ class suffix_details_sample:
         # find an instance for the target city. If there are several,
         # pick one at random
         for instance in self.instances:
-            if instance.endswith(city):
+            if instance.endswith(city) and not instance in self.already_tried:
                 available.append(instance)
         if len(available) > 0:
             selected = self.rd.choice(available)
@@ -263,22 +263,27 @@ class suffix_details_sample:
         for suffix in self.suffixes:
             self.samples.add_suffix(suffix)
 
-
-    def get_candidate(self):
-        candidate = ""
-        # find the suffixes for which we still need samples
+    def get_candidate_suffix(self):
+        suffix = ""
         candidate_suffixes = []
         for suffix in self.suffixes:
-            if len(self.samples.suffixes[suffix].samples) < self.samples.nb_samples:
+            if len(self.samples.suffixes[suffix].samples) < self.samples.nb_samples \
+                and not suffix in self.already_tried:
                 candidate_suffixes.append(suffix)
         if len(candidate_suffixes) > 0:
-            # Try a couple of different possibilities
-            for trials in range(0,5):
-                # pick one at random
-                suffix = self.rd.choice(candidate_suffixes)
-                print("Candidate: " + suffix + " (" + str(len(self.samples.suffixes[suffix].samples)) + ")")
-                # select one of the instances
-                instance = self.instance_for_city(self.suffixes[suffix].city_max)
+            # pick one at random
+            suffix = self.rd.choice(candidate_suffixes)
+        else:
+            print("All suffixes processed.")
+            suffix = ""
+        return suffix
+
+    def get_candidate_instance_slice(self, suffix):
+        candidate = ""
+        # select one of the instances
+        while True:
+            instance = self.instance_for_city(self.suffixes[suffix].city_max)
+            if instance != "":
                 # compute the directory prefix and look for files that start with the date
                 path =  os.path.join(self.dir_prefix, instance)
                 file_list = []
@@ -289,15 +294,32 @@ class suffix_details_sample:
                             file_list.append(y)
                 if len(file_list) > 0:
                     candidate = self.rd.choice(file_list)
+                    break
+                else:
+                    print("Empty list for " + instance)
+                    self.already_tried[instance] = True
+            else:
+                print("No instance avaliable for " + suffix + " at " + self.suffixes[suffix].city_max)
+                break
         return candidate
 
     def get_samples(self):
         while True:
-            candidate = self.get_candidate()
-            if candidate == "":
+            suffix = self.get_candidate_suffix()
+            if suffix == "":
                 break
-            self.already_tried[candidate] = True
-            self.samples.add_log_file(candidate)
+            for suffix_trial in range(0,20):
+                candidate = self.get_candidate_instance_slice(suffix)
+                if candidate != "":
+                    print("Trying: " + candidate)
+                    self.already_tried[candidate] = True
+                    self.samples.add_log_file(candidate)
+                    print(suffix + ": " + str(len(self.samples.suffixes[suffix].samples)) + " samples")
+                    if len(self.samples.suffixes[suffix].samples) >= self.samples.nb_samples:
+                        break
+                else:
+                    self.already_tried[suffix] = True
+                    break
 
     def save(self, file_name):
         self.samples.save(file_name)

@@ -26,10 +26,3 @@ sds.get_samples()
 # save the result files
 sds.samples.save(result_file)
 
-# Compare outouts to expected result
-if not compare_file_test.compare_files(audited, audited_ref):
-    exit(1)
-else:
-    exit(0)
-
-
