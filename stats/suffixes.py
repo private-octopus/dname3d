@@ -519,10 +519,9 @@ class suffix_details_file:
 
     def merge(self, other):
         for suffix in other.suffixes:
-            if suffix in self.suffixes:
-                self.suffixes[suffix].merge(other.suffixes[suffix])
-            else:
-                self.suffixes[suffix] = other.suffixes[suffix]
+            if not suffix in self.suffixes:
+                self.suffixes[suffix] = suffix_detail_entry(suffix, self.hll_k)
+            self.suffixes[suffix].merge(other.suffixes[suffix])
 
 
 # Prepare monthly per instance daily reports.
