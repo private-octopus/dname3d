@@ -21,6 +21,7 @@ def parts_to_domain(np):
         z = np[0]
         if len(np) > 1:
             for p in np[1:]:
+                z += "."
                 z += p
     return z
 
@@ -86,21 +87,27 @@ class public_suffix:
                 if s_class == 0:
                     # Basic rule like "com" requires just one part, e.g."example.com"
                     if len(popped) == 0:
-                        x = z
+                        if test:
+                            print("Match popped(0) \"" + z + "\"")
+                        #x = z
+                        x = ""
                     else:
                         is_suffix = True
                         if len(z) > 0:
                             x = popped[-1] + '.' + z
                         else:
                             x = popped[-1]
+                    if test:
+                        print("Matched to \"" + x + "\"")
                     break
                 elif s_class == 1:
                     # rules like "*.mm" require 3 parts name, e.g. test.example.mm
                     if len(popped) < 2:
-                        if len(popped) > 0:
-                            x = popped[0] + "." + z
-                        else:
-                            x = z
+                        #if len(popped) > 0:
+                        #    x = popped[0] + "." + z
+                        #else:
+                        #    x = z
+                        x = ""
                     else:
                         is_suffix = True
                         x = popped[-2] + "." + popped[-1]
@@ -122,10 +129,11 @@ class public_suffix:
            if test:
                print("Not matched, parts: " + str(ln))
            if ln < 2:
-               if ln == 1:
-                    x = nameparts[0]
-               else:
-                    x = ""
+               #if ln == 1:
+               #     x = nameparts[0]
+               #else:
+               #     x = ""
+               x = ""
            else:
                is_suffix = True
                x = nameparts[ln-2] + "." + nameparts[ln-1]
