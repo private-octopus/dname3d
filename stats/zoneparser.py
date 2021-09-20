@@ -59,7 +59,7 @@ class lru_list:
             else:
                 # add an entry to the list
                 self.table[key] = lru_list_entry(self.target_class)
-                if len(self.table) >= self.target_number:
+                if len(self.table) > self.target_number:
                     #if the list is full, pop the least recently used entry
                     old = self.lru_last
                     self.lru_last = self.table[old].lru_previous
@@ -132,14 +132,18 @@ class zone_parser:
         x = self.approx_ns.evaluate()
         f.write("top,-," + str(self.number_names) + "," + str(x) + "," + self.approx_ns.to_full_text() + "\n")
         # TODO: sort by highest value before printing.
-        for sf in self.sf_list.table:
+        sf = self.sf_list.lru_first
+        while sf != "":
             # save each top entry
-            y = self.sf_list.table[sf].data.approx_names.evaluate()
+            y = self.sf_list.table[ns].data.approx_names.evaluate()
             f.write("sf," + sf + "," + str(self.sf_list.table[sf].data.hit_count) + "," + str(y) + "," + self.sf_list.table[sf].data.approx_names.to_full_text() + "\n")
+            sf = self.sf_list.table[sf].lru_next
+        ns = self.ns_list.lru_first
         for ns in self.ns_list.table:
             # save each top entry
             y = self.ns_list.table[ns].data.approx_names.evaluate()
             f.write("ns," + ns + "," + str(self.ns_list.table[ns].data.hit_count) + "," + str(y) + "," + self.ns_list.table[ns].data.approx_names.to_full_text() + "\n")
+            ns = self.ns_list.table[ns].lru_next
         f.close()
 
 
