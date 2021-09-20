@@ -104,15 +104,19 @@ class zone_parser:
             # extract the public suffix
             x,is_suffix = self.ps.suffix(ns_name)
             # special rule for AWS
-            if x.startswith("awsdns-"):
-                p = x.split(".")
-                x = "awsdns-??"
-                for np in p[1:]:
-                    x += "." + np
-            ret = self.sf_list.add(x)
-            if ret:
-                self.sf_list.table[x].data.hit_count += 1
-                self.sf_list.table[x].data.approx_names.add(fqdn)
+            if x == "" or not is_suffix:
+                print("Cannot add empty suffix for " + ns_name + " (" + str(is_suffix) + ")")
+            else:
+                if x.startswith("awsdns-"):
+                    p = x.split(".")
+                    x = "awsdns-??"
+                    for np in p[1:]:
+                        x += "." + np
+                else:
+                    ret = self.sf_list.add(x)
+                    if ret:
+                        self.sf_list.table[x].data.hit_count += 1
+                        self.sf_list.table[x].data.approx_names.add(fqdn)
 
         return ret
 
@@ -122,7 +126,10 @@ class zone_parser:
             parts = line.split("\t")
             # if this is a "NS" record, submit.
             if len(parts) == 5 and parts[2] == "in" and parts[3] == "ns":
-                if not self.add(parts[4].strip(), parts[0]):
+                ns_name = parts[4].strip()
+                if ns_name == "":
+                    print("Cannot add empty ns name from: <" + line.strip() + ">")
+                elif not self.add(ns_name, parts[0]):
                     print("Error parsing " + line.strip())
                     break
 
