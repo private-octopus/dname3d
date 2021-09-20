@@ -27,7 +27,7 @@ class lru_list:
     def __init__(self, target_number, target_class):
         self.lru_first = ""
         self.lru_last = ""
-        self.target_number = 10000
+        self.target_number = target_number
         self.target_class = target_class
         self.table = dict()
 
@@ -55,7 +55,7 @@ class lru_list:
                     #if the list is full, pop the least recently used entry
                     old = self.lru_last
                     self.lru_last = self.table[old].lru_previous
-                    self.table[self.lru_last] = ""
+                    self.table[self.lru_last].lru_next = ""
                     self.table.pop(old)
                 if len(self.lru_first) == 0:
                     self.lru_first = key
@@ -77,9 +77,9 @@ class ns_list_entry:
         self.approx_names = hyperloglog.hyperloglog(4)
 
 class zone_parser:
-    def __init__(self, ps):
-        self.ns_list = lru_list(10000, ns_list_entry)
-        self.sf_list = lru_list(10000, ns_list_entry)
+    def __init__(self, ps, limit):
+        self.ns_list = lru_list(limit, ns_list_entry)
+        self.sf_list = lru_list(limit, ns_list_entry)
         self.number_names = 0
         self.approx_ns = hyperloglog.hyperloglog(4)
         self.ps = ps
