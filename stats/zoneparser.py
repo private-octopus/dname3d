@@ -62,7 +62,7 @@ class lru_list:
                     self.lru_last = self.table[old].lru_previous
                     self.table[self.lru_last].lru_next = ""
                     self.table.pop(old)
-                if len(self.lru_first) == 0:
+                if self.lru_first == "":
                     self.lru_first = key
                     self.lru_last = key
                 else:
