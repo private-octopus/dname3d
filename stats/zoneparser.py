@@ -38,6 +38,9 @@ class lru_list:
             if key in self.table:
                 # bring to top
                 if not key == self.lru_first:
+                    if self.table[key].lru_previous == "":
+                        print("Could not promote <" + key + "> (" + self.table[key].lru_previous + "," + self.table[key].lru_next + ") after " + str(len(self.table)) + " (" + self.lru_first + "," + self.lru_last + ")")
+                        ret = False
                     try:
                         if key == self.lru_last:
                             self.lru_last = self.table[key].lru_previous
