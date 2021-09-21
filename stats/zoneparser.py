@@ -86,10 +86,13 @@ class ns_list_entry:
 
 class zone_parser:
     def __init__(self, ps, limit):
+        self.sf_list = lru_list(limit, ns_list_entry)
         self.ns_list = lru_list(limit, ns_list_entry)
         self.sf_list = lru_list(limit, ns_list_entry)
-        self.number_names = 0
-        self.approx_ns = hyperloglog.hyperloglog(4)
+        self.hit_count = 0
+        self.approx_names = hyperloglog.hyperloglog(4)
+        self.approx_servers = hyperloglog.hyperloglog(4)
+        self.approx_services = hyperloglog.hyperloglog(4)
         self.ps = ps
 
     def add(self, ns_name, fqdn):
@@ -99,8 +102,9 @@ class zone_parser:
             self.ns_list.table[ns_name].data.hit_count += 1
             self.ns_list.table[ns_name].data.approx_names.add(fqdn)
             # account for the total number of domains and servers
-            self.number_names += 1
-            self.approx_ns.add(ns_name)
+            self.hit_count += 1
+            self.approx_names.add(fqdn)
+            self.approx_servers.add(ns_name)
             # extract the public suffix
             x,is_suffix = self.ps.suffix(ns_name)
             if x == "" or not is_suffix:
@@ -108,7 +112,7 @@ class zone_parser:
                 l = len(np)
                 while l >= 2 and len(np[l-1]) == 0:
                     l -= 1
-                if l >= 2:
+                if l > 2:
                     x = (np[l-2] + "." + np[l-1])
             if x == "":
                 print("Cannot add empty suffix for " + ns_name + " (" + str(is_suffix) + ")")
@@ -119,11 +123,11 @@ class zone_parser:
                     x = "awsdns-??"
                     for np in p[1:]:
                         x += "." + np
-                else:
-                    ret = self.sf_list.add(x)
-                    if ret:
-                        self.sf_list.table[x].data.hit_count += 1
-                        self.sf_list.table[x].data.approx_names.add(fqdn)
+                self.approx_services.add(x)
+                ret = self.sf_list.add(x)
+                if ret:
+                    self.sf_list.table[x].data.hit_count += 1
+                    self.sf_list.table[x].data.approx_names.add(fqdn)
 
         return ret
 
@@ -143,8 +147,12 @@ class zone_parser:
     def save(self, file_name):
         f = open(file_name , "wt", encoding="utf-8")
         f.write("table,server,nb_hits,est_names," + self.approx_ns.header_full_text("h") + "\n");
-        x = self.approx_ns.evaluate()
-        f.write("top,-," + str(self.number_names) + "," + str(x) + "," + self.approx_ns.to_full_text() + "\n")
+        x = self.approx_names.evaluate()
+        f.write("top,names," + str(self.hit_count) + "," + str(x) + "," + self.approx_names.to_full_text() + "\n")
+        x = self.approx_services.evaluate()
+        f.write("top,services," + str(self.hit_count) + "," + str(x) + "," + self.approx_services.to_full_text() + "\n")
+        x = self.approx_servers.evaluate()
+        f.write("top,servers," + str(self.hit_count) + "," + str(x) + "," + self.approx_servers.to_full_text() + "\n")
         # TODO: sort by highest value before printing.
         sf = self.sf_list.lru_first
         while sf != "":
