@@ -103,10 +103,17 @@ class zone_parser:
             self.approx_ns.add(ns_name)
             # extract the public suffix
             x,is_suffix = self.ps.suffix(ns_name)
-            # special rule for AWS
             if x == "" or not is_suffix:
+                np = ns_name.split(".")
+                l = len(np)
+                while l >= 2 and len(np[l-1]) == 0:
+                    l -= 1
+                if l >= 2:
+                    x = (np[l-2] + "." + np[l-1])
+            if x == "":
                 print("Cannot add empty suffix for " + ns_name + " (" + str(is_suffix) + ")")
             else:
+                # special rule for AWS DNS
                 if x.startswith("awsdns-"):
                     p = x.split(".")
                     x = "awsdns-??"
