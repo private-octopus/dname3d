@@ -146,7 +146,7 @@ class zone_parser:
 
     def save(self, file_name):
         f = open(file_name , "wt", encoding="utf-8")
-        f.write("table,server,nb_hits,est_names," + self.approx_ns.header_full_text("h") + "\n");
+        f.write("table,server,nb_hits,est_names," + self.approx_names.header_full_text("h") + "\n");
         x = self.approx_names.evaluate()
         f.write("top,names," + str(self.hit_count) + "," + str(x) + "," + self.approx_names.to_full_text() + "\n")
         x = self.approx_services.evaluate()
