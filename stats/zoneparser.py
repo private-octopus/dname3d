@@ -157,11 +157,11 @@ class zone_parser:
         sf = self.sf_list.lru_first
         while sf != "":
             # save each top entry
-            y = self.sf_list.table[ns].data.approx_names.evaluate()
+            y = self.sf_list.table[sf].data.approx_names.evaluate()
             f.write("sf," + sf + "," + str(self.sf_list.table[sf].data.hit_count) + "," + str(y) + "," + self.sf_list.table[sf].data.approx_names.to_full_text() + "\n")
             sf = self.sf_list.table[sf].lru_next
         ns = self.ns_list.lru_first
-        for ns in self.ns_list.table:
+        while ns != "":
             # save each top entry
             y = self.ns_list.table[ns].data.approx_names.evaluate()
             f.write("ns," + ns + "," + str(self.ns_list.table[ns].data.hit_count) + "," + str(y) + "," + self.ns_list.table[ns].data.approx_names.to_full_text() + "\n")
