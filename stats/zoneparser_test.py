@@ -8,19 +8,23 @@ import sys
 import zoneparser
 import compare_file_test
 import pubsuffix
+import traceback
 
 # main program
 
 ns_out = sys.argv[1]
 ps_file = sys.argv[2]
-limit = int(sys.argv[3])
+dup_file = sys.argv[3]
 zones = sys.argv[4:]
 
 ps = pubsuffix.public_suffix()
 ps.load_file(ps_file)
 print("found " + str(len(ps.table)) + " public suffixes.")
 
-zp = zoneparser.zone_parser(ps, limit)
+
+
+zp = zoneparser.zone_parser2(ps)
+zp.load_dups(dup_file)
 
 for zone_file in zones:
     try:

@@ -16,6 +16,7 @@ import functools
 import sys
 import ipaddress
 import pubsuffix
+import traceback
 
 class lru_list_entry:
     def __init__(self, target_class):
@@ -168,7 +169,116 @@ class zone_parser:
             ns = self.ns_list.table[ns].lru_next
         f.close()
 
+# version 2 of the zone parser does not rely on LRU,
+# but only stores the "service names". Running version 1 on
+# the COM zone find about 600,000 services, which is only
+# 1.5 times the size required for storing two tables
+# of 200,000 entries in version 1. We then reduce space
+# further by storing fewer data for each entry, which means
+# version2 should not use more memory than version 1.
+# It should also run faster.
+
+class service_entry:
+    def __init__(self, x):
+        self.server = x
+        self.hit_count = 0
+        self.name_count = 0
+        self.previous_fqdn = ""
+        self.approx_names = hyperloglog.hyperloglog(4)
+
+def compare_by_names(item, other):
+    if item.name_count < other.name_count:
+        return -1
+    elif item.name_count > other.name_count:
+        return 1
+    elif item.hit_count < other.hit_count:
+        return -1
+    elif item.hit_count > other.hit_count:
+        return 1
+    elif item.server < other.server:
+        return -1
+    elif item.server > other.server:
+        return 1
+    else:
+        return 0
+
+class zone_parser2:
+    def __init__(self, ps):
+        self.sf_dict = dict()
+        self.hit_count = 0
+        self.name_count = 0
+        self.previous_fqdn = ""
+        self.approx_servers = hyperloglog.hyperloglog(6)
+        self.ps = ps
+        self.dups = dict()
+
+    def load_dups(self, file_name):
+        for line in open(file_name , "rt", encoding="utf-8"):
+            # parse the input line
+            parts = line.split(",")
+            if len(parts) >= 2:
+                key = parts[0].strip()
+                val = parts[1].strip()
+                self.dups[key] = val
+
+    def add(self, ns_name, fqdn):
+        if fqdn != self.previous_fqdn:
+            self.name_count += 1
+            self.previous_fqdn = fqdn
+        self.hit_count += 1
+        self.approx_servers.add(ns_name)
+        # extract the public suffix
+        x,is_suffix = self.ps.suffix(ns_name)
+        if x == "" or not is_suffix:
+            np = ns_name.split(".")
+            l = len(np)
+            while l >= 2 and len(np[l-1]) == 0:
+                l -= 1
+            if l > 2:
+                x = (np[l-2] + "." + np[l-1])
+        if x == "":
+            print("Cannot add empty suffix for " + ns_name + " (" + str(is_suffix) + ")")
+        else:
+            # special rule for AWS DNS
+            if x.startswith("awsdns-"):
+                p = x.split(".")
+                x = "awsdns-??"
+                for np in p[1:]:
+                    x += "." + np
+            if x in self.dups:
+                x = self.dups[x]
+            if not x in self.sf_dict:
+                self.sf_dict[x] = service_entry(x)
+            self.sf_dict[x].hit_count += 1
+            if fqdn != self.sf_dict[x].previous_fqdn:
+                self.sf_dict[x].name_count += 1
+                self.sf_dict[x].previous_fqdn = fqdn
+        return True
+
+    def add_zone_file(self, file_name):
+        for line in open(file_name , "rt", encoding="utf-8"):
+            # parse the input line
+            parts = line.split("\t")
+            # if this is a "NS" record, submit.
+            if len(parts) == 5 and parts[2] == "in" and parts[3] == "ns":
+                ns_name = parts[4].strip()
+                if ns_name == "":
+                    print("Cannot add empty ns name from: <" + line.strip() + ">")
+                elif not self.add(ns_name, parts[0]):
+                    print("Error parsing " + line.strip())
+                    break
 
 
+    def save(self, file_name):
+        flat = list(self.sf_dict.values())
+        flat.sort(key=functools.cmp_to_key(compare_by_names), reverse=True)
+        f = open(file_name , "wt", encoding="utf-8")
+        f.write("table,server,nb_hits,nb_names," + self.approx_servers.header_full_text("h") + "\n");
+        f.write("top,names," + str(self.hit_count) + "," + str(self.name_count) + "\n")
+        f.write("top,services," + str(self.hit_count) + "," + str(len(flat)) + "\n")
+        x = self.approx_servers.evaluate()
+        f.write("top,servers," + str(self.hit_count) + "," + str(x) + "," + self.approx_servers.to_full_text() + "\n")
+        for entry in flat:
+            f.write("sf," + entry.server + ","  + str(entry.hit_count)  + "," + str(entry.name_count) + "\n") 
 
-
+        f.close()
