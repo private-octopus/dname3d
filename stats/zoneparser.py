@@ -182,9 +182,13 @@ class service_entry:
     def __init__(self, x):
         self.server = x
         self.hit_count = 0
+        self.million_hits = 0
+        self_million_names = 0
         self.name_count = 0
         self.previous_fqdn = ""
-        self.approx_names = hyperloglog.hyperloglog(4)
+        self.nb_millions = []
+        for x in range(0,5):
+            self.nb_millions.append(0)
 
 def compare_by_names(item, other):
     if item.name_count < other.name_count:
@@ -207,10 +211,16 @@ class zone_parser2:
         self.sf_dict = dict()
         self.hit_count = 0
         self.name_count = 0
+        self.million_names = 0
+        self.million_hits = 0
         self.previous_fqdn = ""
         self.approx_servers = hyperloglog.hyperloglog(6)
         self.ps = ps
         self.dups = dict()
+        self.millions = dict()
+        self.nb_millions = []
+        for x in range(0,5):
+            self.nb_millions.append(0)
 
     def load_dups(self, file_name):
         for line in open(file_name , "rt", encoding="utf-8"):
@@ -221,11 +231,42 @@ class zone_parser2:
                 val = parts[1].strip()
                 self.dups[key] = val
 
+    def load_million(self, file_name):
+        rank = 0
+        log_rank = 0
+        next_limit = 100
+        for line in open(file_name , "rt", encoding="utf-8"):
+            million_host = line.strip()
+            rank += 1
+            if rank > next_limit and next_limit < 1000000:
+                log_rank += 1
+                next_limit *= 10
+            p = million_host.split(".")
+            x = ""
+            is_suffix = False
+            if len(p) == 2:
+                x = p[0] + "." + p[1]
+                is_suffix = True
+            else:
+                x,is_suffix = self.ps.suffix(million_host)
+            if x != "" and is_suffix and not x in self.millions:
+                self.millions[x] = log_rank
+
     def add(self, ns_name, fqdn):
+        million_rank = -1
         if fqdn != self.previous_fqdn:
             self.name_count += 1
             self.previous_fqdn = fqdn
+            y = fqdn
+            if y.endswith("."):
+                y = y[0:-1]
+                if y in self.millions:
+                    million_rank = self.millions[y]
+                    self.nb_millions[million_rank] += 1
+                    self.million_names += 1
         self.hit_count += 1
+        if million_rank >= 0:
+            self.million_hits += 1
         self.approx_servers.add(ns_name)
         # extract the public suffix
         x,is_suffix = self.ps.suffix(ns_name)
@@ -253,6 +294,8 @@ class zone_parser2:
             if fqdn != self.sf_dict[x].previous_fqdn:
                 self.sf_dict[x].name_count += 1
                 self.sf_dict[x].previous_fqdn = fqdn
+                if million_rank >= 0:
+                    self.sf_dict[x].nb_millions[million_rank] += 1
         return True
 
     def add_zone_file(self, file_name):
@@ -276,9 +319,17 @@ class zone_parser2:
         f.write("table,server,nb_hits,nb_names," + self.approx_servers.header_full_text("h") + "\n");
         f.write("top,names," + str(self.hit_count) + "," + str(self.name_count) + "\n")
         f.write("top,services," + str(self.hit_count) + "," + str(len(flat)) + "\n")
+        f.write("top,million," + str(self.million_hits) + "," + str(self.million_names))
+        for r in self.nb_millions:
+            f.write("," + str(r))
+        f.write("\n")
+
         x = self.approx_servers.evaluate()
         f.write("top,servers," + str(self.hit_count) + "," + str(x) + "," + self.approx_servers.to_full_text() + "\n")
         for entry in flat:
-            f.write("sf," + entry.server + ","  + str(entry.hit_count)  + "," + str(entry.name_count) + "\n") 
+            f.write("sf," + entry.server + ","  + str(entry.hit_count)  + "," + str(entry.name_count))
+            for r in entry.nb_millions:
+                f.write("," + str(r))
+            f.write("\n")
 
         f.close()

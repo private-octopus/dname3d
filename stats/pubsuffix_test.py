@@ -11,6 +11,7 @@
 import sys
 import traceback
 import pubsuffix
+import time
 
 ps = pubsuffix.public_suffix()
 
@@ -24,8 +25,16 @@ def checkPublicSuffix(d, x):
         exit(1)
     print("For <" + d + "> got <" + y + "," + str(is_suffix) + "> as expected.")
 
-if len(sys.argv) != 2:
-    print("Usage: " + sys.argv[0] + " public_suffix_file")
+public_suffix_file = ""
+test_sample_file = ""
+
+if len(sys.argv) == 2:
+    public_suffix_file = sys.argv[1]
+elif len(sys.argv) == 3:
+    public_suffix_file = sys.argv[1]
+    test_sample_file = sys.argv[2]
+else:
+    print("Usage: " + sys.argv[0] + " public_suffix_file + [test_sample_file]")
     exit(1)
 
 public_suffix_file = sys.argv[1]
@@ -39,6 +48,7 @@ print("Loaded suffixes: " + str(len(ps.table)))
 # Any copyright is dedicated to the Public Domain.
 # https://creativecommons.org/publicdomain/zero/1.0/
 
+test_start = time.time()
 # null input.
 checkPublicSuffix("", "");
 # Mixed case.
@@ -138,8 +148,28 @@ checkPublicSuffix('www.test.k12.ak.us', 'test.k12.ak.us');
 # checkPublicSuffix('xn--fiqs8s', "");
 
 # Finally done
+test_done = time.time()
 
-print("All tests pass.")
+print("All tests pass in " + str(test_done - test_start))
+
+if test_sample_file != "":
+    perf_start = time.time()
+    nb_success = 0
+    nb_total = 0
+    for line in open(test_sample_file, "rt", encoding="utf-8"):
+        try:
+            nb_total += 1
+            name = line.strip()
+            x,is_success = ps.suffix(name)
+            if is_success:
+                nb_success += 1
+        except:
+            traceback.print_exc()
+            print("Cannot process line[" + str(nb_total) + "]: " + name)
+            exit(1)
+
+    perf_done = time.time()
+    print("Processed " + str(nb_total) + " lines, " + str(nb_success) + " success, in " + str(perf_done-perf_start))
 
 
 
