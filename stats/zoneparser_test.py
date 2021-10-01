@@ -13,11 +13,17 @@ import time
 
 # main program
 
+if len(sys.argv) < 6:
+    print("Usage: " + sys.argv[0] + "ns_out ps_file dup_file million_file zone_file*")
+    exit(1)
+
 ns_out = sys.argv[1]
 ps_file = sys.argv[2]
 dup_file = sys.argv[3]
 million_file = sys.argv[4]
 zones = sys.argv[5:]
+
+print("Parsing " + str(len(zones)) + ", results in " + ns_out)
 
 ps = pubsuffix.public_suffix()
 ps.load_file(ps_file)

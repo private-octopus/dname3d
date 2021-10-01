@@ -5,7 +5,7 @@
 # py .\lru_test.py 5 ..\data\lru_test_in.txt ..\data\lru_test_ref.csv ..\tmp\lru_test_res.csv
 
 import sys
-import zoneparser
+import lrulist
 import compare_file_test
 import traceback
 import random
@@ -16,7 +16,7 @@ class lru_test_entry:
         self.last_hit = -1
         self.first_hit = -1
 
-def lru_list(lru):
+def lru_to_str(lru):
     s = ""
     old = ""
     key = lru.lru_first
@@ -37,7 +37,7 @@ test_in = sys.argv[2]
 test_ref = sys.argv[3]
 test_out = sys.argv[4]
 
-lru = zoneparser.lru_list(limit,lru_test_entry)
+lru = lrulist.lru_list(limit,lru_test_entry)
 print("LRU list max " + str(lru.target_number) + ", starts with " + str(len(lru.table)))
 rank = 0
 for line in open(test_in, "rt"):
@@ -49,7 +49,7 @@ for line in open(test_in, "rt"):
             lru.table[key].data.last_hit = rank
             if lru.table[key].data.first_hit < 0:
                 lru.table[key].data.first_hit = rank
-            print("Rank: " + str(rank) + ", " + key + ", lru: " + lru_list(lru))
+            print("Rank: " + str(rank) + ", " + key + ", lru: " + lru_to_str(lru))
         else:
             break
     except:
