@@ -143,7 +143,7 @@ class zone_parser2:
         # extract the public suffix
         x = extract_server_suffix(ns_name, self.ps, self.dups)
         if x == "":
-            print("Cannot add empty suffix for " + ns_name + " (" + str(is_suffix) + ")")
+            print("Cannot add empty suffix for <" + ns_name + ">")
         else:
             if not x in self.sf_set:
                 self.sf_dict[x] = service_entry(x)
