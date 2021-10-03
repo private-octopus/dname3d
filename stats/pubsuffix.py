@@ -30,7 +30,6 @@ def parts_to_domain(np):
 class public_suffix:
     def __init__(self):
         self.table = dict()
-        self.tset = set()
 
     def load_file(self, file_name):
         ret = True
@@ -48,7 +47,6 @@ class public_suffix:
                     n = l[2:]
                     s_class = 1
                 self.table[n] = s_class
-                self.tset.add(n)
         except Exception as e:
             traceback.print_exc()
             print("Cannot load <" + file_name + ">: " + str(e))
@@ -152,7 +150,7 @@ class public_suffix:
             z = n[z_offset:] 
             if test:
                 print("Testing: " + z)
-            if z in self.tset:
+            if z in self.table:
                 matched = True
                 x,is_suffix = self.apply_match(z,nameparts[0:trying])
                 if test:
@@ -186,7 +184,7 @@ class public_suffix:
             z = parts_to_domain(nameparts)         
             if test:
                 print("Testing: " + z)
-            if z in self.tset:
+            if z in self.table:
                 matched = True
                 s_class = self.table[z]
                 if test:
