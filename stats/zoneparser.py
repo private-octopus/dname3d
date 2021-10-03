@@ -78,7 +78,6 @@ def compare_by_names(item, other):
 class zone_parser2:
     def __init__(self, ps):
         self.sf_dict = dict()
-        self.sf_set = set()
         self.hit_count = 0
         self.name_count = 0
         self.million_names = 0
@@ -88,7 +87,6 @@ class zone_parser2:
         self.ps = ps
         self.dups = dict()
         self.millions = dict()
-        self.millions_set = set()
         self.nb_millions = []
         for x in range(0,5):
             self.nb_millions.append(0)
@@ -120,9 +118,8 @@ class zone_parser2:
                 is_suffix = True
             else:
                 x,is_suffix = self.ps.suffix(million_host)
-            if x != "" and is_suffix and not x in self.millions_set:
+            if x != "" and is_suffix and not x in self.millions:
                 self.millions[x] = log_rank
-                self.millions_set.add(x)
 
     def add(self, ns_name, fqdn):
         million_rank = -1
@@ -132,7 +129,7 @@ class zone_parser2:
             y = fqdn
             if y.endswith("."):
                 y = y[0:-1]
-                if y in self.millions_set:
+                if y in self.millions:
                     million_rank = self.millions[y]
                     self.nb_millions[million_rank] += 1
                     self.million_names += 1
@@ -143,11 +140,10 @@ class zone_parser2:
         # extract the public suffix
         x = extract_server_suffix(ns_name, self.ps, self.dups)
         if x == "":
-            print("Cannot add empty suffix for <" + ns_name + ">")
+            print("Cannot add empty suffix for " + ns_name)
         else:
-            if not x in self.sf_set:
+            if not x in self.sf_dict:
                 self.sf_dict[x] = service_entry(x)
-                self.sf_set.add(x)
             self.sf_dict[x].hit_count += 1
             if fqdn != self.sf_dict[x].previous_fqdn:
                 self.sf_dict[x].name_count += 1
