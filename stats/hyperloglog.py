@@ -63,10 +63,16 @@ class hyperloglog:
         e = int(e + 0.5)
         return e
 
-    def merge(self, other):
+    def nb_buckets(self):
+        return self.m
+    
+    def merge_vector(self, v):
         for i in range(0,self.m):
-            if other.b[i] > self.b[i]:
-                self.b[i] = other.b[i]
+            if v[i] > self.b[i]:
+                self.b[i] = v[i]
+
+    def merge(self, other):
+        self.merge_vector(other.b)
 
     def to_text(self):
         s = ""
@@ -92,9 +98,8 @@ class hyperloglog:
                     s += ","
                 s += str(self.b[i])
         return s
-    
+
     def from_full_parts(self, parts):
-        s = ""
         for p in range(0,self.m):
             if p <= len(parts):
                 self.b[p] = int(parts[p])

@@ -14,7 +14,46 @@ import gzip
 import functools
 import ipaddress
 import pubsuffix
+import os
 
+# partition a file, for exampel so that multiple threads can work on a big zone file.
+# partitions end at the closest domain transition.
+def compute_file_partitions(file_name, nb_parts):
+    # open file
+    file = open(file_name, "rt", encoding="utf-8")
+    # get the cursor positioned at end
+    file.seek(0, os.SEEK_END)
+    # get the current position of cursor
+    # this will be equivalent to size of file
+    file_size = file.tell()
+    # split the file in nb_parts
+    file_part = [0]
+    for x in range(1,nb_parts):
+        b = int (x*file_size/nb_parts)
+        if b > 512:
+            b -= 512
+        file.seek(b)
+        first_line = True
+        name_found = False
+        name = ""
+        for line in file:
+            if first_line:
+                first_line = False
+            else:
+                parts = line.split("\t")
+                if len(parts) > 0:
+                    name_part = parts[0].strip()
+                    if name_found:
+                        if name_part != name:
+                            break
+                    else:
+                        name = name_part
+                        name_found = True
+            b += len(line)
+        file_part.append(b)
+    file_part.append(file_size)
+    file.close()
+    return file_part
 
 # Normalise the names of the name servers so we can tabulate them
 def extract_server_suffix(ns_name, ps, dups):
@@ -152,8 +191,14 @@ class zone_parser2:
                     self.sf_dict[x].nb_millions[million_rank] += 1
         return True
 
-    def add_zone_file(self, file_name):
-        for line in open(file_name , "rt", encoding="utf-8"):
+    def add_zone_file(self, file_name, p_start=0, p_end=0):
+        file = open(file_name , "rt", encoding="utf-8")
+        file_pos = 0
+        if p_start != 0:
+            file.seek(p_start)
+            file_pos = p_start
+        for line in file:
+            file_pos += len(line)
             # parse the input line
             parts = line.split("\t")
             # if this is a "NS" record, submit.
@@ -164,7 +209,9 @@ class zone_parser2:
                 elif not self.add(ns_name, parts[0]):
                     print("Error parsing " + line.strip())
                     break
-
+            if p_end != 0 and file_pos >= p_end:
+                break
+        file.close()
 
     def save(self, file_name):
         flat = list(self.sf_dict.values())
@@ -177,7 +224,6 @@ class zone_parser2:
         for r in self.nb_millions:
             f.write("," + str(r))
         f.write("\n")
-
         x = self.approx_servers.evaluate()
         f.write("top,servers," + str(self.hit_count) + "," + str(x) + "," + self.approx_servers.to_full_text() + "\n")
         for entry in flat:
@@ -187,3 +233,68 @@ class zone_parser2:
             f.write("\n")
 
         f.close()
+
+    def parse_line(parts):
+        x = []
+        for p in parts:
+            x.append(int(p))
+        return x
+
+    def load_partial_result(self, result_file):
+        has_names = False
+        has_services = False
+        has_million = False
+        file = open(result_file , "rt", encoding="utf-8")
+        line = file.readline()
+        if not line.startswith("table,server,nb_hits,nb_names,"):
+            print("File " + result_file + " does not with expected header.")
+            return False
+        for line in file:
+            parts = line.strip().split(",")
+            if len(parts) == 0:
+                continue
+            else:
+                try:
+                    x = zone_parser2.parse_line(parts[2:])
+                    if parts[0] == "top":
+                        if parts[1] == "names" and len(x) == 2:
+                            self.hit_count += x[0]
+                            self.name_count += x[1]
+                        elif parts[1] == "services":
+                            pass
+                        elif parts[1] == "million":
+                            if len(x) == 2 + len(self.nb_millions):
+                                self.million_hits += x[0]
+                                self.million_names += x[1]
+                                for i in range(0,len(self.nb_millions)):
+                                    self.nb_millions[i] += x[2+i]
+                            else:
+                                print("File " + result_file + " expexted 2 + " + str(len(self.nb_millions)) + " numbers, got: " + line.strip())
+                                return False
+                        elif parts[1] == "servers":
+                            if len(x) == 2 + self.approx_servers.nb_buckets():
+                                self.approx_servers.merge_vector(x[2:])
+                            else:
+                                print("File " + result_file + " expexted 2 + " + str(self.approx_servers.nb_buckets()) + " numbers, got: " + line.strip())
+                                return False
+                        else:
+                            print("File " + result_file + " unexpexted top line: " + line.strip())
+                            return False
+                    elif parts[0] == "sf" and len(x) == 2 + len(self.nb_millions):
+                        n = parts[1]
+                        if not n in self.sf_dict:
+                            self.sf_dict[n] = service_entry(n)
+                        self.sf_dict[n].hit_count += x[0]
+                        self.sf_dict[n].name_count += x[1]
+                        for i in range(0,len(self.nb_millions)):
+                            self.sf_dict[n].nb_millions[i] += x[2+i]
+                    else:
+                        # Error!
+                        print("File " + result_file + " unexpexted line: " + line.strip())
+                        return False
+                except Exception as e:
+                    traceback.print_exc()
+                    print("Cannot parse line: " + line.strip() + "\n in file <" + result_file  + ">\nException: " + str(e))
+                    return False
+        return True
+
