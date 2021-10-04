@@ -55,7 +55,6 @@ class dnslook:
         js += ",\"zone\":\"" + self.zone + "\""
         js += ",\"ns\":" + dnslook.to_json_array(self.ns)
         js += ",\"cname\":" + dnslook.to_json_array(self.cname)
-        print(str(self.server))
         js += ",\"server\":\"" + self.server + "\""
         if self.as_number > 0:
             js += ",\"as_number\":" + str(self.as_number)
