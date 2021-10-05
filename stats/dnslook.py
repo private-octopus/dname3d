@@ -25,6 +25,7 @@ import sys
 import dns.resolver
 import json
 import traceback
+import time
 
 class dnslook:
     def __init__(self):
@@ -157,11 +158,25 @@ class dnslook:
             self.as_number = i2a.get_asn(self.ip[0])
 
 
-    def get_domain_data(self, domain, ps, i2a):
+    def get_domain_data(self, domain, ps, i2a, stats):
         self.domain = domain
+        start_time = time.time()
         self.get_a()
+        a_time = time.time()
         self.get_aaaa()
+        aaaa_time = time.time()
         self.get_ns()
+        ns_time = time.time()
         self.get_cname()
+        cname_time = time.time()
         self.get_server(ps)
+        server_time = time.time()
         self.get_asn(i2a)
+        asn_time = time.time()
+        stats[0] += a_time - start_time
+        stats[1] += aaaa_time - a_time
+        stats[2] += ns_time - aaaa_time
+        stats[3] += cname_time - ns_time
+        stats[4] += server_time - cname_time
+        stats[5] += asn_time - server_time
+

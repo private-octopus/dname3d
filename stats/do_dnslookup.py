@@ -72,6 +72,10 @@ mr.load(million_file)
 pick_start = time.time()
 print("Ready after " + str(pick_start - start_time))
 nb_assessed = 0
+stat_name = ["a", "aaaa", "ns", "cname", "server", "asn"]
+stats = []
+for x in range(0,6):
+    stats.append(0)
 try:
     with open(result_file, "at") as f_out:
         while nb_assessed < nb_trials:
@@ -81,7 +85,7 @@ try:
             try:
                 d = dnslook.dnslook()
                 # Get the name servers, etc. 
-                d.get_domain_data(domain, ps, i2a)
+                d.get_domain_data(domain, ps, i2a, stats)
                 # Write the json line in the result file.
                 f_out.write(d.to_json() + "\n")
                 nb_assessed += 1
@@ -96,4 +100,6 @@ except Exception as e:
     print("Giving up");
 pick_end = time.time()
 print("Assessed " + str(nb_assessed) + " domains in " + str(pick_end - pick_start))
+for x in range(0,6):
+    print("Time " + stat_name[x] + ": " + str(stats[x]/nb_assessed))
 
