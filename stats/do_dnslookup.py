@@ -28,8 +28,6 @@ def load_names(result_file, targets, ps, i2a, stats):
                 d.get_domain_data(domain, ps, i2a, stats)
                 # Write the json line in the result file.
                 f_out.write(d.to_json() + "\n")
-                sys.stdout.write("+")
-                sys.stdout.flush()
             except Exception as e:
                 traceback.print_exc()
                 print("Cannot assess domain <" + domain  + ">\nException: " + str(e))
@@ -47,7 +45,6 @@ class dns_lookup_bucket:
 
     def load(self):
         load_names(self.bucket_file_name, self.targets, self.ps, self.i2a, self.stats)
-        sys.stdout.write("!")
         sys.stdout.flush()
         with open(self.stats_file_name,"wt") as f_stats:
             for stat in self.stats:
@@ -159,7 +156,6 @@ def main():
             old_target = last_target
             last_target += target_count_per_bucket[bucket_id]
             bucket_target = targets[old_target:last_target]
-            print("Bucket " + str(bucket_id) + ", " + str(len(bucket_target)))
             this_bucket = dns_lookup_bucket(bucket_id, temp_name, temp_stats, bucket_target, ps, i2a, stats)
             bucket_list.append(this_bucket)
         # run multiple parsing in parallel
