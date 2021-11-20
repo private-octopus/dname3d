@@ -37,6 +37,8 @@ class dnslook:
         self.cname = []
         self.server = ""
         self.as_number = 0
+        self.resolver=dns.resolver.Resolver()
+        self.resolver.timeout=3
 
     def to_json_array(x):
         jsa = "["
@@ -95,7 +97,7 @@ class dnslook:
     def get_a(self):
         self.ip = []
         try:
-            addresses = dns.resolver.query(self.domain, 'A')
+            addresses = self.resolver.query(self.domain, 'A')
             for ipval in addresses:
                 self.ip.append(ipval.to_text())
         except Exception as e:
@@ -104,7 +106,7 @@ class dnslook:
     def get_aaaa(self):
         self.ipv6 = []
         try:
-            addresses = dns.resolver.query(self.domain, 'AAAA')
+            addresses = self.resolver.query(self.domain, 'AAAA')
             for ipval in addresses:
                 self.ipv6.append(ipval.to_text())
         except Exception as e:
@@ -119,7 +121,7 @@ class dnslook:
                 self.zone += p
                 self.zone += '.'
             try:
-                nameservers = dns.resolver.query(self.zone, 'NS')
+                nameservers = self.resolver.query(self.zone, 'NS')
                 for nsval in nameservers:
                     self.ns.append(nsval.to_text())
                 break
@@ -131,7 +133,7 @@ class dnslook:
         candidate = self.domain
         while True:
             try:
-                aliases = dns.resolver.query(candidate, 'CNAME')
+                aliases = self.resolver.query(candidate, 'CNAME')
                 if len(aliases) > 0:
                     candidate = aliases[0].to_text()
                     self.cname.append(candidate)

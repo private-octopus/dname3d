@@ -31,6 +31,7 @@ def load_names(result_file, targets, ps, i2a, stats):
             except Exception as e:
                 traceback.print_exc()
                 print("Cannot assess domain <" + domain  + ">\nException: " + str(e))
+                break
 
 
 class dns_lookup_bucket:
