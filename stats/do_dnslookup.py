@@ -59,7 +59,7 @@ def load_dns_look_up_bucket(bucket):
 def main():
     start_time = time.time()
     if len(sys.argv) != 6 and len(sys.argv) != 7:
-        print("Usage: " + sys.argv[0] + "nb_trials ip2as.csv publicsuffix.dat million_domain_list result_file [tmp_prefix]")
+        print("Usage: " + sys.argv[0] + " nb_trials ip2as.csv publicsuffix.dat million_domain_list result_file [tmp_prefix]")
         exit(1)
     nb_trials = int(sys.argv[1])
     ip2as_file = sys.argv[2]
@@ -119,11 +119,29 @@ def main():
     while len(targets) < nb_trials:
         domain = mr.random_pick()
         if domain == "":
-            break
+            if not mr.next_random_range():
+                # no other empty range
+                print("Error. All ranges empty after " + str(trials_done) + " trials, but loop did not stop.")
+                break
+            else:
+                x =  mr.random_pick()
+                if x == "":
+                    print("Error. Range " + str(mr.random_range) + " is empty, yet was picked.")
+                    break
         else:
             targets.append(domain)
             mr.mark_read(domain)
+        if not mr.next_random_range():
+            # no other empty range
+            print("All ranges empty after " + str(trials_done) + " trials.")
+            break
     nb_assessed = len(targets)
+
+    if temp_prefix != "":
+        target_file = temp_prefix + "_targets.txt"
+        with open(target_file, "wt") as tf:
+            for target in targets:
+                tf.write(target+"\n");
 
     # Once the required number of targets has been selected, prepare parallel threads
     ready_time = time.time()

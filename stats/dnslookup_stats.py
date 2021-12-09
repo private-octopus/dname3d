@@ -59,7 +59,6 @@ def get_million_class(fqdn, millions):
             million_rank = millions[x]
         else:
             print("for " + y + " got " + x + ", not in millions")
-
     return million_rank
 
 class rank_count:
@@ -76,9 +75,10 @@ ps = pubsuffix.public_suffix()
 if not ps.load_file(public_suffix_file):
     print("Could not load the suffixes")
     exit(1)
-    
-zp = zoneparser.zone_parser2(ps)
+   
 print("\nLoaded " + str(len(ps.table)) + " suffixes.")
+
+zp = zoneparser.zone_parser2(ps)
 zp.load_million(million_file)
 print("\nLoaded " + str(len(zp.millions)) + " millions.")
 zp.load_dups(dups_file)
