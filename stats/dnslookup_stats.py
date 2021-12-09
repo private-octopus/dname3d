@@ -121,11 +121,13 @@ ns_dict = dict()
 
 
 nb_fail = 0
+total_rank = rank_count();
 for dns_lookup in stats:
     # check that the names used in the domain property are consistent with the names in the million list.
     # may want to use suffixes in the million list!
     ns_this_name = dict()
     m_class = get_million_class(dns_lookup.domain, zp.millions)
+    total_rank.count[m_class] += 1
     if m_class > 4:
         print("could not find " + dns_lookup.domain + " in millions.")
         nb_fail += 1
@@ -146,7 +148,10 @@ print("processed the names")
 
 with open(result_file,"wt") as f:
     f.write("name, 100, 1K, 10K, 100K, 1M, all\n");
-
+    f.write("count");
+    for count in total_rank.count:
+        f.write("," + str(count));
+    f.write("\n")
     for ns_name in ns_dict:
         f.write(ns_name)
         m_class = ns_dict[ns_name]
