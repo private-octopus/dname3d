@@ -157,7 +157,9 @@ class zone_parser2:
                 is_suffix = True
             else:
                 x,is_suffix = self.ps.suffix(million_host)
-            if x != "" and is_suffix and not x in self.millions:
+            if x == "":
+                x = million_host
+            if not x in self.millions:
                 self.millions[x] = log_rank
 
     def add(self, ns_name, fqdn):
