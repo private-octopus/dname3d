@@ -43,6 +43,7 @@ class dns_lookup_bucket:
         self.i2a = i2a
         self.stats = stats
         self.stats_file_name = stats_file_name
+        self.is_complete = False
 
     def load(self):
         load_names(self.bucket_file_name, self.targets, self.ps, self.i2a, self.stats)
@@ -184,17 +185,20 @@ def main():
                 bucket = future_to_bucket[future]
                 try:
                     data = future.result()
+                    bucket.is_complete = True
                     sys.stdout.write(".")
                     sys.stdout.flush()
                 except Exception as exc:
                     traceback.print_exc()
                     print('\nBucket %d generated an exception: %s' % (bucket.bucket_id, exc))
-                    exit(1)
+
         bucket_time = time.time()
         print("\nThreads took " + str(bucket_time - ready_time))
         # aggregate the results
         with open(result_file, "at") as f_out:
             for bucket in bucket_list:
+                if not bucket.is_complete:
+                    continue
                 # load the domain names from the partial result files
                 for line in open(bucket.bucket_file_name, "rt"):
                     f_out.write(line);

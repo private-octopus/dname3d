@@ -38,7 +38,8 @@ class dnslook:
         self.server = ""
         self.as_number = 0
         self.resolver=dns.resolver.Resolver()
-        self.resolver.timeout=3
+        self.resolver.timeout = 1
+        self.resolver.lifetime = 3
 
     def to_json_array(x):
         jsa = "["
