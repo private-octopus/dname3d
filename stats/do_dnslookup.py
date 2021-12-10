@@ -104,6 +104,7 @@ def main():
         print("Cannot load file <" + result_file  + ">\nException: " + str(e))
         print("Giving up");
         exit(1)
+    print("Loaded " + str(len(mr.already_processed)) + " names.")
     # Load the million file. The loading process will not load the names 
     # marked as already processed in the previous loop.
     mr.load(million_file)
