@@ -146,12 +146,14 @@ class dnslook:
     def get_cname(self):
         self.cname = []
         candidate = self.domain
-        while True:
+        loop_count = 0
+        while loop_count < 16:
             try:
                 aliases = self.resolver.query(candidate, 'CNAME')
                 if len(aliases) > 0:
                     candidate = sanitize(aliases[0].to_text())
                     self.cname.append(candidate)
+                    loop_count += 1
                 else:
                     break
             except Exception as e:
