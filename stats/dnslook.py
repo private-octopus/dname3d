@@ -27,6 +27,20 @@ import json
 import traceback
 import time
 
+def sanitize(object_may_be_string):
+    unsafe_str = str(object_may_be_string)
+    safe_str = '' 
+    for char in unsafe_str: 
+        cp = ord(char) 
+        if (cp >= ord('a') and cp <= ord('z')) or \
+           (cp >= ord('0') and cp <= ord('9')) or \
+           (cp >= ord('A') and cp <= ord('Z')) or \
+           cp == ord('.') or cp == ord('-') or cp == ord('_') : 
+            safe_str += char 
+        elif cp == 9: 
+            safe_str += '_'
+    return safe_str
+
 class dnslook:
     def __init__(self):
         self.domain = ""
@@ -48,7 +62,7 @@ class dnslook:
             if not is_first:
                 jsa += ","
             is_first = False
-            jsa += "\"" + str(item) + "\""
+            jsa += "\"" + sanitize(item) + "\""
         jsa += "]"
         return(jsa)
 
@@ -124,7 +138,7 @@ class dnslook:
             try:
                 nameservers = self.resolver.query(self.zone, 'NS')
                 for nsval in nameservers:
-                    self.ns.append(nsval.to_text())
+                    self.ns.append(sanitize(nsval.to_text()))
                 break
             except Exception as e:
                 nameparts.pop(0)
@@ -136,7 +150,7 @@ class dnslook:
             try:
                 aliases = self.resolver.query(candidate, 'CNAME')
                 if len(aliases) > 0:
-                    candidate = aliases[0].to_text()
+                    candidate = sanitize(aliases[0].to_text())
                     self.cname.append(candidate)
                 else:
                     break

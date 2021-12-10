@@ -8,6 +8,7 @@ import million_random
 import time
 import zoneparser
 import pubsuffix
+import dnslook
 
 def time_trial(x, nb_trials, mfn):
     time_start = time.time()
@@ -72,6 +73,8 @@ ps = pubsuffix.public_suffix()
 if not ps.load_file(public_suffix_file):
     print("Could not load the suffixes")
     exit(1)
+
+print("Test sanity of " + dnslook.sanitize("1234567890._-.abc-DeF-xyZ"))
 
 ref_dict, ref_ranges = million_random.million_dict(million_file,100,10)
 print("Reference: " + str(len(ref_dict)) + " names in " + str(ref_ranges) + " ranges.")
