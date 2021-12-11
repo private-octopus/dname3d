@@ -19,6 +19,7 @@ import zoneparser
 import time
 import concurrent.futures
 import os
+import functools
 
 def load_dns_file(dns_json):
     stats = []
@@ -64,12 +65,62 @@ def get_million_class(fqdn, millions):
 class rank_count:
     def __init__(self):
         self.count = [0,0,0,0,0,0]
+
+class stats_one_entry:
+    def __init__(self, name, count):
+        self.name = name
+        self.count = count
+
+def compare_stats_entry(item, other):
+    if item.count < other.count:
+        return -1
+    elif item.count > other.count:
+        return 1
+    elif item.name < other.name:
+        return -1
+    elif item.name > other.name:
+        return 1
+    else:
+        return 0
+
+class stats_one:
+    def __init__(self):
+        self.p50 = 0
+        self.p90 = 0
+        self.total = 0
+        self.full_list = []
+
+    def add(self, name, count):
+        self.total += count
+        self.full_list.append(stats_one_entry(name, count))
+
+    def compute(self):
+        self.full_list.sort(key=functools.cmp_to_key(compare_stats_entry), reverse=True)
+        cumul50 = 50*self.total/100
+        cumul90 = 90*self.total/100
+        cumul = 0.0
+        rank = 0
+        for entry in self.full_list:
+            rank += 1
+            cumul += entry.count
+            if self.p50 == 0 and cumul >= cumul50:
+                self.p50 = rank
+            if cumul >= cumul90:
+                self.p90 = rank
+                break
+    def comment(self, name):
+        print(name+":" + str(len(self.full_list)) + ", 50%: " + str(self.p50) + ", 90%: " + str(self.p90))
+        for i in range(0,5):
+            print(name + "["+ str(i) + "]: " + self.full_list[i].name + ", " + str(self.full_list[i].count/self.total))
+
+
 # Main
 
 million_file = sys.argv[2]
 public_suffix_file = sys.argv[3]
 dups_file = sys.argv[4]
-result_file = sys.argv[5]
+zone_result_file = sys.argv[5]
+result_file = sys.argv[6]
 
 ps = pubsuffix.public_suffix()
 if not ps.load_file(public_suffix_file):
@@ -82,24 +133,10 @@ zp = zoneparser.zone_parser2(ps)
 zp.load_million(million_file)
 print("\nLoaded " + str(len(zp.millions)) + " millions.")
 zp.load_dups(dups_file)
-
 print("loaded the dependencies")
 
-test_names = ["vic.gov.au", "qld.gov.au", "blogspot.com.es", "wa.gov.au", "sa.gov.au", "vic.edu.au",
-              "tas.gov.au", "nsw.edu.au", "blogspot.com.ar", "blogspot.co.nz", "blogspot.co.at" ]
-nb_test_fail = 0
-for test_n in test_names:
-    m_class = get_million_class(test_n, zp.millions)
-    if m_class > 4:
-        print("could not find " + test_n + " in millions.")
-        nb_test_fail += 1
-        if nb_test_fail > 3:
-            exit(1)
-        else:
-            for name in zp.millions:
-                if name.endswith(test_n):
-                    print("Found " + name + " rank " + str(zp.millions[name]))
-
+zp.load_partial_result(zone_result_file)
+print("Loaded " + str(len(zp.sf_dict)) + " services from " + zone_result_file + ".")
 
 test_rank = rank_count()
 for name in zp.millions:
@@ -112,13 +149,7 @@ print("test ranks:" + rank_string)
 stats = load_dns_file(sys.argv[1])
 print("\nLoaded " + str(len(stats)) + " lines.")
 
-
 ns_dict = dict()
-
-
-
-
-
 
 nb_fail = 0
 total_rank = rank_count();
@@ -161,3 +192,19 @@ with open(result_file,"wt") as f:
         
 print("saved " + str(len(ns_dict)) + " services.")
 
+level_stats = []
+level_name = "top_10"
+for i in range(0,5):
+    level_name += "0"
+    level_stats.append(stats_one())
+    for name in ns_dict:
+        if ns_dict[name].count[i] > 0:
+            level_stats[i].add(name, ns_dict[name].count[i])
+    level_stats[i].compute()
+    level_stats[i].comment(level_name)
+
+zone_stats = stats_one()
+for service in zp.sf_dict:
+    zone_stats.add(service, zp.sf_dict[service].hit_count)
+zone_stats.compute()
+zone_stats.comment("Com")
