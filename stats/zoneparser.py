@@ -185,6 +185,8 @@ class zone_parser2:
         else:
             if not x in self.sf_dict:
                 self.sf_dict[x] = service_entry(x)
+                if x == "awsdns-??.org":
+                    print(ns_name + " matches " + x)
             self.sf_dict[x].hit_count += 1
             if fqdn != self.sf_dict[x].previous_fqdn:
                 self.sf_dict[x].name_count += 1
