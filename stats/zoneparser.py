@@ -73,10 +73,11 @@ def extract_server_suffix(ns_name, ps, dups):
             for np in p[1:]:
                 x += "." + np
         # other possible duplicate names for same service 
-        if "awsdns-" in ns_name and ".org" in x and not x in dups:
-            print("No duplicate for " + x)
         if x in dups:
             x = dups[x]
+    else:
+        # special case when no map.
+        print("No mapping for: " + ns_name)
     return x
 
 # version 2 of the zone parser does not rely on LRU,
