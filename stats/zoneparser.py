@@ -58,13 +58,18 @@ def compute_file_partitions(file_name, nb_parts):
 # Normalise the names of the name servers so we can tabulate them
 def extract_server_suffix(ns_name, ps, dups):
     x,is_suffix = ps.suffix(ns_name)
-    if x == "" or not is_suffix:
+    if x == "":
         np = ns_name.split(".")
         l = len(np)
         while l >= 2 and len(np[l-1]) == 0:
             l -= 1
-        if l > 2:
-            x = (np[l-2] + "." + np[l-1])
+        if not is_suffix and l > 2:
+            np = np[-2:]
+        while part in np:
+            if x != "":
+                x += "."
+            x += part
+        print(ns_name + "maps to " + x + ", is_suffix: " + str(is_suffix))
     if x != "":
         # special rule for AWS DNS
         if x.startswith("awsdns-"):
