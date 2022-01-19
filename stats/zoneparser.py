@@ -67,8 +67,6 @@ def extract_server_suffix(ns_name, ps, dups):
             x = (np[l-2] + "." + np[l-1])
     if x != "":
         # special rule for AWS DNS
-        if "awsdns-" in ns_name and ".org" in ns_name:
-            print(ns_name + " mapped to " + x)
         if x.startswith("awsdns-"):
             p = x.split(".")
             x = "awsdns-??"
@@ -77,6 +75,8 @@ def extract_server_suffix(ns_name, ps, dups):
         # other possible duplicate names for same service 
         if x in dups:
             x = dups[x]
+        if "awsdns-" in ns_name and ".org" in x:
+            print(ns_name + " mapped to " + x)
     return x
 
 # version 2 of the zone parser does not rely on LRU,
