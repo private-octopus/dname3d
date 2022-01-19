@@ -16,5 +16,5 @@ pub_s=../data/public_suffix_list.dat
 mill=../data/million.txt
 dups=../data/service-duplicates.csv
 stats="/home/huitema/com_stats/com_stats_$month.csv"
-python3 do_zoneparser.py $stats $x $pub_s $mill $dups $temp
+python3 do_zoneparser.py $stats $x $pub_s $dups $mill $temp
 rm $temp*
