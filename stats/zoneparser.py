@@ -64,11 +64,11 @@ def extract_server_suffix(ns_name, ps, dups):
         while l >= 2 and len(np[l-1]) == 0:
             l -= 1
         if not is_suffix and l > 2:
-            np = np[-2:]
-        while part in np:
+            np = np[l-2:]
+        while i in range(0,len(np)):
             if x != "":
                 x += "."
-            x += part
+            x += np[i]
         print(ns_name + "maps to " + x + ", is_suffix: " + str(is_suffix))
     if x != "":
         # special rule for AWS DNS
