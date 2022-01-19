@@ -65,7 +65,7 @@ def extract_server_suffix(ns_name, ps, dups):
             l -= 1
         if not is_suffix and l > 2:
             np = np[l-2:]
-        while i in range(0,len(np)):
+        for i in range(0,len(np)):
             if x != "":
                 x += "."
             x += np[i]
