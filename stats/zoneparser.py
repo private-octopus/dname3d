@@ -61,15 +61,17 @@ def extract_server_suffix(ns_name, ps, dups):
     if x == "":
         np = ns_name.split(".")
         l = len(np)
-        while l >= 2 and len(np[l-1]) == 0:
+        while l > 0 and len(np[l-1]) == 0:
+            np = np[0:-1]
             l -= 1
         if not is_suffix and l > 2:
             np = np[l-2:]
-        for i in range(0,len(np)):
+            l = 2
+        for part in np:
             if x != "":
                 x += "."
-            x += np[i]
-        print(ns_name + "maps to " + x + ", is_suffix: " + str(is_suffix))
+            x += part
+        print(ns_name + " maps to " + x + ", is_suffix: " + str(is_suffix))
     if x != "":
         # special rule for AWS DNS
         if x.startswith("awsdns-"):
