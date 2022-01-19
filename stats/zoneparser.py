@@ -67,7 +67,7 @@ def extract_server_suffix(ns_name, ps, dups):
             x = (np[l-2] + "." + np[l-1])
     if x != "":
         # special rule for AWS DNS
-        if "awsdns-" in ns_name and ".org" in ns_names:
+        if "awsdns-" in ns_name and ".org" in ns_name:
             printf(ns_name + " mapped to " + x)
         if x.startswith("awsdns-"):
             p = x.split(".")
