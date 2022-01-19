@@ -62,6 +62,7 @@ def main():
 
     zp = zoneparser.zone_parser2(ps)
     zp.load_dups(dup_file)
+    print("found " + str(len(zp.dups)) + " duplicate prefixes in " + dup_file)
     zp.load_million(million_file)
     print("found " + str(len(zp.millions)) + " million-hosts prefixes in " + million_file)
     ready_time = time.time()
