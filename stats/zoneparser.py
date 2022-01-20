@@ -58,13 +58,19 @@ def compute_file_partitions(file_name, nb_parts):
 # Normalise the names of the name servers so we can tabulate them
 def extract_server_suffix(ns_name, ps, dups):
     x,is_suffix = ps.suffix(ns_name)
-    if x == "" or not is_suffix:
+    if x == "":
         np = ns_name.split(".")
         l = len(np)
-        while l >= 2 and len(np[l-1]) == 0:
+        while l > 0 and len(np[l-1]) == 0:
+            np = np[0:-1]
             l -= 1
-        if l > 2:
-            x = (np[l-2] + "." + np[l-1])
+        if not is_suffix and l > 2:
+            np = np[l-2:]
+            l = 2
+        for part in np:
+            if x != "":
+                x += "."
+            x += part
     if x != "":
         # special rule for AWS DNS
         if x.startswith("awsdns-"):
@@ -185,6 +191,8 @@ class zone_parser2:
         else:
             if not x in self.sf_dict:
                 self.sf_dict[x] = service_entry(x)
+                if x == "awsdns-??.org":
+                    print(ns_name + " matches " + x)
             self.sf_dict[x].hit_count += 1
             if fqdn != self.sf_dict[x].previous_fqdn:
                 self.sf_dict[x].name_count += 1
