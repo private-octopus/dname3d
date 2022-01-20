@@ -131,7 +131,7 @@ class stats_one:
     def add_name_count(self, nb_names):
         self.nb_names += nb_names
 
-    def compute(self):
+    def compute(self, top_set):
         self.full_list.sort(key=functools.cmp_to_key(compare_stats_entry), reverse=True)
         cumul50 = 50*self.total/100
         cumul90 = 90*self.total/100
@@ -144,23 +144,28 @@ class stats_one:
                 self.p50 = rank
             if cumul >= cumul90:
                 self.p90 = rank
+            if rank < 5 and not entry.name in top_set:
+                top_set.add(entry.name)
+            if cumul >= cumul90 and rank > 5: 
                 break
+
     def comment(self, name):
         print(name+":" + str(len(self.full_list)) + ", 50%: " + str(self.p50) + ", 90%: " + str(self.p90))
         for i in range(0,5):
             print(name + "["+ str(i) + "]: " + self.full_list[i].name + ", " + str(self.full_list[i].count/self.total))
 
-    def m9(self, rank, m9date, F):
+    def m9(self, rank, m9date, top_set, F):
         metric = "M9." + str(rank+1); 
         if self.nb_names > 0:
             F.write(metric + ".1," + m9date +",v2.0, ," + str(self.total/self.nb_names) + "\n")
         F.write(metric + ".2," + m9date + ",v2.0, ," + str(self.p50) + "\n")
         F.write(metric + ".3," + m9date + ",v2.0, ," + str(self.p90) + "\n")
-        for i in range(0,20):
+        for i in range(0,len(self.full_list)):
             fraction = self.full_list[i].count/self.total
-            if i > 4 and fraction < 0.005:
+            if i <= 10 or fraction >= 0.005 or self.full_list[i].name in top_set :
+                F.write(metric + ".4," + m9date + ",v2.0, " + self.full_list[i].name + "," + str(fraction) + "\n")
+            if i > 10 and fraction < 0.001:
                 break
-            F.write(metric + ".4," + m9date + ",v2.0, " + self.full_list[i].name + "," + str(fraction) + "\n")
            
 
 
@@ -244,13 +249,14 @@ for dns_lookup in stats:
     level_stats[m_class].add_name_count(1)
 
 # Compute the statistics for each category
+top_set = set()
 for m_class in range(0,6):
-    level_stats[m_class].compute()
+    level_stats[m_class].compute(top_set)
     level_stats[m_class].comment(level_name[m_class])
 
 # publish the metric file
 print("saving metric M9 in " + result_file + " for " + m9_date)
 with open(result_file,"wt") as F:
     for m_class in range(0,6):
-        level_stats[m_class].m9(m_class, m9_date, F)
+        level_stats[m_class].m9(m_class, m9_date, top_set, F)
 
