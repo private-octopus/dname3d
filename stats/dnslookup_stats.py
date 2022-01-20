@@ -210,7 +210,7 @@ print("\nLoaded " + str(len(stats)) + " lines.")
 # the sum of names for this service in the com file.
 
 # First prepare an empty table of 6 categories.
-level_name = ["top 100", "next 900", "next 9000", "next 90000", "next 900000", "COM" ]
+level_name = ["top 100", "101 to 1000", "1001 to 10000", "10001 to 100000", "100000 to 1M", "COM" ]
 level_stats = []
 for i in range(0,6):
     level_stats.append(stats_one())
