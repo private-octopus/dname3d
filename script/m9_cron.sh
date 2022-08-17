@@ -25,8 +25,9 @@ echo "Adding $NBSAMPLES to the million list"
 echo "Recomputing M9 for $YEAR-$MM-$DAY"
 ../script/compute_m9.sh $YEAR $MM $DAY
 echo "Writing M9 to ITHI staging server"
-cd /home/huitema/
-rsync -Cav -e "ssh -l octo0" M9 octo0@ithi.research.icann.org:data
+# cd /home/huitema/
+# rsync -Cav -e "ssh -l octo0" M9 octo0@ithi.research.icann.org:data
+scp /home/huitema/M9/M9-$YEAR-$MM-$DAY.csv octo0@ithi.research.icann.org:data/M9/
 echo "M9 updated."
 cd $OLD_DIR
 pwd
