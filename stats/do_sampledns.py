@@ -43,13 +43,15 @@ class sample_dns_list:
                     target = name
                 try:
                     self.host = socket.getaddrinfo(target, 443)
-                    if len(self.host) > 0:
-                        found = 1
-                        x = self.host[0]
+                    for j in range(0, len(self.host)):
+                        x = self.host[i]
                         y = x[4]
                         ip = y[0]
-                        if len(self.i2a.table) > 0:
+                        if ip.version == 4:
                             as_number = self.i2a.get_asn(ip)
+                            found = 1
+                            break
+                    if found > 0:
                         break
                 except Exception as e:
                     pass
@@ -79,6 +81,9 @@ def load_dns_bucket(bucket):
 
 # Main
 def main():
+    if len(sys.argv) > 4 and len(sys.argv) < 6:
+        print("Usage: " + sys.argv[0] + " name_list ip2as_file output_file [temp_prefix]")
+        exit(1)
     input_names = sys.argv[1]
     ip2as_file = sys.argv[2]
     output_file = sys.argv[3]
