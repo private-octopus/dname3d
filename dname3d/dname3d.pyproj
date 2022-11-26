@@ -21,7 +21,32 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="cluster_id.py" />
+    <Compile Include="compare_dga13_ip_files.py" />
+    <Compile Include="compare_file_test.py" />
+    <Compile Include="dga13_extract_names.py" />
+    <Compile Include="dga13_test_gen.py" />
     <Compile Include="dname3d.py" />
+    <Compile Include="dnslook.py" />
+    <Compile Include="dnslooktest.py" />
+    <Compile Include="dnslookup_stats.py" />
+    <Compile Include="do_dnslookup.py" />
+    <Compile Include="do_namestats.py" />
+    <Compile Include="do_sampledns.py" />
+    <Compile Include="do_suffix_report.py" />
+    <Compile Include="do_suffix_sample_detail.py" />
+    <Compile Include="do_zoneparser.py" />
+    <Compile Include="do_zonesampler.py" />
+    <Compile Include="extract_top_n.py" />
+    <Compile Include="file_split_test.py" />
+    <Compile Include="find_name_services.py" />
+    <Compile Include="hyperloglog.py" />
+    <Compile Include="ip2as.py" />
+    <Compile Include="ip2asbuilder.py" />
+    <Compile Include="ip2asfrombgp.py" />
+    <Compile Include="ip2astest.py" />
+    <Compile Include="ipstats.py" />
+    <Compile Include="logparse.py" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
