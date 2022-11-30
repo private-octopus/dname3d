@@ -156,7 +156,6 @@ class name_entry_list:
         ret = True
         one_entry = name_entry()
         if one_entry.from_json(line):
-            print("Replacing entry for " + one_entry.domain)
             self.names[one_entry.domain] = one_entry
         else:
             ret = False
@@ -180,17 +179,10 @@ class name_entry_list:
 
     def solve(self):
         for name in self.names:
-            print("Looking up " + name)
             if not self.names[name].ip_queried:
                 self.names[name].get_a(self.resolver)
-                print("Found " + str(len(self.names[name].ip)) + " IP for " + name)
-            else:
-                print("A already resolved for " + name)
             if not self.names[name].ipv6_queried:
                 self.names[name].get_aaaa(self.resolver)
-                print("Found " + str(len(self.names[name].ipv6)) + " IPv6 for " + name)
-            else:
-                print("AAAA already resolved for " + name)
 
     def prepare_bucket(self, nb_buckets, ns_cache_bucket_prefix):
         buckets = []
