@@ -192,7 +192,7 @@ def main():
                 rank = -1
                 if w.domain in mr:
                     rank = mr[w.domain]
-                line = str(rank) + "," w.domain
+                line = str(rank) + "," + w.domain
                 for prefix in prefixes:
                     line += "," + prefix
                 line += ",\n"
