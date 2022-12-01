@@ -181,15 +181,15 @@ def main():
             prefixes = set()
             incomplete = True
             for ns in w.ns:
-                incomplete = False
                 if ns in nl.names:
                     for prefix in nl.names[ns].prefixes:
                         if not prefix in prefixes:
                             prefixes.add(prefix)
+                            incomplete = False
                 else:
                     incomplete = True
             if not incomplete:
-                rank = -1
+                rank = 99
                 if w.domain in mr:
                     rank = mr[w.domain]
                 line = str(rank) + "," + w.domain

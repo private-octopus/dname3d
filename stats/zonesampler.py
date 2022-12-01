@@ -47,6 +47,41 @@ import random
 import os
 import sys
 import math
+import dnslook
+import json
+
+class one_zone_sample:
+    def __init__(self, name, ns_name):
+        self.domain = name
+        self.ns = [ ns_name ]
+
+    def add_ns(self, name, ns_name):
+        ret = False
+        if name == self.domain:
+            self.ns.append(ns_name)
+            ret = True
+        return ret
+
+    def to_json(self):
+        # use a subset of the json format of dnslook objects
+        js = "{\"domain\":\"" + self.domain + "\""
+        js += ",\"ns\":" + dnslook.dnslook.to_json_array(self.ns)
+        js += "}"
+        return js
+
+    def from_json(self, line):
+        # Apply subset of dnslook from json logic.
+        ret = False
+        try:
+            jd = json.loads(line)
+            if 'domain' in jd and 'ns' in jd:
+                ret = True
+                self.domain = jd['domain']
+                self.ns = jd['ns']
+        except Exception as e:
+            traceback.print_exc()
+            print("Cannot parse <" + line.strip + ">")
+        return ret
 
 class zone_sampler:
     def __init__(self, N, seed=0):
@@ -54,18 +89,19 @@ class zone_sampler:
         self.K = 0
         self.is_full = False
         self.samples = []
-        self.previous = ""
+        self.previous = one_zone_sample("", "")
         if seed == 0:
             seed = os.urandom(16)
         self.rand = random.Random(seed)
 
-    def propose(self, name):
-        if name == self.previous:
+    def propose(self, name, ns_name):
+        if self.previous.add_ns(name, ns_name):
             return
-        self.previous = name
+        new_name = one_zone_sample(name, ns_name)
+        self.previous = new_name
         self.K += 1
         if not self.is_full:
-            self.samples.append(name)
+            self.samples.append(new_name)
             self.is_full = len(self.samples) >= self.N
             # print("Sample[" + str(self.K -1) + "]= " + name)
         else:
@@ -74,17 +110,18 @@ class zone_sampler:
                 u = self.rand.randrange(0, self.N)
                 # old = self.samples[u]
                 # print("Sample[" + str(u) + "]= " + name + " instead of " + old)
-                self.samples[u] = name
+                self.samples[u] = new_name
 
     def save(self, file_name):
         with open(file_name, "wt") as file:
-            for name in self.samples:
-                file.write(name + "\n")
+            for one_name in self.samples:
+                file.write(one_name.to_json() + "\n")
 
     def load_partial_result(self, result_file):
         for line in open(result_file, "rt"):
-            name = line.strip()
-            self.samples.append(name)
+            one_name = one_zone_sample("","")
+            if one_name.from_json(line):
+                self.samples.append(one_name)
 
     def add_zone_file(self, file_name, p_start=0, p_end=0):
         file = open(file_name , "rt", encoding="utf-8")
@@ -98,7 +135,7 @@ class zone_sampler:
             parts = line.split("\t")
             # if this is a "NS" record, submit the name.
             if len(parts) == 5 and parts[2] == "in" and parts[3] == "ns":
-                self.propose(parts[0])
+                self.propose(parts[0], parts[4].strip())
             if p_end != 0 and file_pos >= p_end:
                 break
         file.close()
