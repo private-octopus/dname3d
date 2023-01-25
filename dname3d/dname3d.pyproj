@@ -40,6 +40,7 @@
     <Compile Include="extract_top_n.py" />
     <Compile Include="file_split_test.py" />
     <Compile Include="find_name_services.py" />
+    <Compile Include="getmajestic.py" />
     <Compile Include="hyperloglog.py" />
     <Compile Include="ip2as.py" />
     <Compile Include="ip2asbuilder.py" />
