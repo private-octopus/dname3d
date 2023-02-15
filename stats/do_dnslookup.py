@@ -115,7 +115,7 @@ def main():
     print("Ready after " + str(pick_start - start_time))
     stat_name = ["a", "aaaa", "ns", "cname", "server", "asn"]
     stats = []
-    for x in range(0,6):
+    for x in range(0,7):
         stats.append(0)
     targets = []
     while len(targets) < nb_trials:

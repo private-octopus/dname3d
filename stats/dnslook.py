@@ -50,6 +50,7 @@ class dnslook:
         self.ns = []
         self.cname = []
         self.server = ""
+        self.ds_algo = []
         self.as_number = 0
         self.resolver=dns.resolver.Resolver()
         self.resolver.timeout = 1
@@ -68,10 +69,11 @@ class dnslook:
 
     def to_json(self):
         js = "{\"domain\":\"" + self.domain + "\""
-        js += ",\"ip\":" + dnslook.to_json_array(self.ip)       
+        js += ",\"ip\":" + dnslook.to_json_array(self.ip)
         js += ",\"ipv6\":" + dnslook.to_json_array(self.ipv6)
         js += ",\"zone\":\"" + self.zone + "\""
         js += ",\"ns\":" + dnslook.to_json_array(self.ns)
+        js += ",\"ds_algo\":" + dnslook.to_json_array(self.ds_algo)
         js += ",\"cname\":" + dnslook.to_json_array(self.cname)
         js += ",\"server\":\"" + self.server + "\""
         if self.as_number > 0:
@@ -102,6 +104,8 @@ class dnslook:
                     self.server = jd['server']
                 if 'as_number' in jd:
                     self.as_number = jd['as_number']
+                if 'ds_algo' in jd:
+                    self.ds_algo = jd['ds_algo']
         except Exception as e:
             traceback.print_exc()
             print("Cannot parse <" + js + ">")
@@ -142,6 +146,25 @@ class dnslook:
                 break
             except Exception as e:
                 nameparts.pop(0)
+
+    def get_ds_algo(self):
+        if self.zone != "":
+            # we assume that "get_ds_algo" is called after "get_ns", so
+            # we use the same zone definition.
+            dsrecs =  self.resolver.query(self.zone, 'DS')
+            for ds_val in dsrecs:
+                is_good_ds = True
+                ds_parts = ds_val.split(" ")
+                if len(ds_parts) > 2:
+                    try:
+                        alg = int(ds_parts[1])
+                        self.ds_algo.append(alg)
+                    except:
+                        is_good_ds = False
+                else:
+                    is_good_ds = False
+                if not is_good_ds:
+                    print("Malformed DS for " + self.zone + ": " + ds_val)
 
     def get_cname(self):
         self.cname = []
@@ -186,6 +209,8 @@ class dnslook:
         aaaa_time = time.time()
         self.get_ns()
         ns_time = time.time()
+        self.get_ds_algo()
+        ds_algo_time = time.time()
         self.get_cname()
         cname_time = time.time()
         self.get_server(ps)
@@ -195,7 +220,8 @@ class dnslook:
         stats[0] += a_time - start_time
         stats[1] += aaaa_time - a_time
         stats[2] += ns_time - aaaa_time
-        stats[3] += cname_time - ns_time
-        stats[4] += server_time - cname_time
-        stats[5] += asn_time - server_time
+        stats[3] += ds_algo_time - ns_time
+        stats[4] += cname_time - ds_algo_time
+        stats[5] += server_time - cname_time
+        stats[6] += asn_time - server_time
 
