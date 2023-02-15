@@ -151,20 +151,20 @@ class dnslook:
         if self.zone != "":
             # we assume that "get_ds_algo" is called after "get_ns", so
             # we use the same zone definition.
-            dsrecs =  self.resolver.query(self.zone, 'DS')
-            for ds_val in dsrecs:
-                is_good_ds = True
-                ds_parts = ds_val.split(" ")
-                if len(ds_parts) > 2:
-                    try:
-                        alg = int(ds_parts[1])
-                        self.ds_algo.append(alg)
-                    except:
-                        is_good_ds = False
-                else:
-                    is_good_ds = False
-                if not is_good_ds:
-                    print("Malformed DS for " + self.zone + ": " + ds_val)
+            try:
+                dnskey_recs =  self.resolver.query(self.zone, dns.rdatatype.DNSKEY)
+                for dnskey in dnskey_recs:
+                    dnskey_parts = dnskey.split(" ")
+                    if len(dnskey_parts) > 2:
+                        try:
+                            alg = int(dnskey_parts[2])
+                            self.ds_algo.append(alg)
+                        except:
+                            print("Malformed DNSKEY algorithm for " + self.zone + ": " + dnskey)
+                    else:
+                        print("Malformed DNSKEY for " + self.zone + ": " + dnskey)
+            except Exception as e:
+                print("No DNSKEY for " + self.zone )
 
     def get_cname(self):
         self.cname = []

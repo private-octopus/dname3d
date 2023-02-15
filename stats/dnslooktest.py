@@ -49,8 +49,8 @@ if not ps.load_file(public_suffix_file):
     print("Could not load the suffixes from" + public_suffix_file )
 
 stats = []
-    for x in range(0,7):
-        stats.append(0)
+for x in range(0,7):
+    stats.append(0)
 
 v = dnslook.dnslook()
 
