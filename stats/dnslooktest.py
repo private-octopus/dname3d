@@ -55,7 +55,7 @@ for x in range(0,7):
 v = dnslook.dnslook()
 
 for domain in domains:
-    v.get_domain_data(domain, ps, i2a, stats)
+    v.get_domain_data(domain, ps, i2a, stats, rank=7)
     js = v.to_json()
     print(js)
     w = dnslook.dnslook()

@@ -5,6 +5,12 @@ import random
 import traceback
 import time
 
+class million_target:
+    def __init__(self, domain, million_rank, million_range):
+        self.domain = domain
+        self.million_rank = million_rank
+        self.million_range = million_range
+
 def million_dict(mfn, first_range, log_factor):
     million_rank = 0
     current_range = 0
@@ -31,83 +37,85 @@ class million_random(object):
     def __init__(self, log_first, log_val):
         self.log_first = log_first
         self.log_val = log_val
-        self.million_list = []
         self.already_processed = set()
-        self.random_range = 1
-        self.range_max = [0,100]
-        self.last_pick_rank = 0
+        self.names_count = 0
+        self.range_names = []
+        self.range_list = []
+        self.nb_collisions = 0
 
     def load(self, mfn):
         million_rank = 0
         current_range = 0
         range_start = 0
         range_end = self.log_first
-        self.range_max = [range_start, range_end]
-        self.million = dict()
-        self.million_list = []
+        self.range_names = []
+        self.range_list = [ 0 ]
+        self.range_names.append([])
+        self.names_count = 0
+        self.nb_collisions = 0
         try: 
             for line in open(mfn, "rt", encoding="utf-8"):
                 if million_rank >= range_end:
                     current_range += 1
                     range_start = range_end
                     range_end *= self.log_val
-                    self.range_max.append(range_end)
-                mn = line.strip()
-                if not mn in self.already_processed:
-                    self.million_list.append(mn)
+                    self.range_list.append(current_range)
+                    self.range_names.append([])
+                name = line.strip()
+                if not name in self.already_processed:
+                    self.range_names[current_range].append(million_target(name, million_rank, current_range))
+                    self.names_count += 1
                 million_rank += 1
-            self.range_max[-1] = million_rank
         except Exception as e:
             traceback.print_exc()
             print("Cannot read file <" + mfn  + ">\nException: " + str(e))
             print("Giving up");
             exit(1)
+        # Clean up the list of ranges
+        popped = True
+        while popped:
+            popped = False
+            for x in range(0, len(self.range_list)):
+                a = self.range_list[x]
+                l = len(self.range_names[a])
+                if l == 0:
+                    self.range_list.pop(x)
+                    popped = True
+                    break
+        
 
     def set_already_processed(self, mn):
         self.already_processed.add(mn)
 
-    def mark_read(self, mn):
-        r = -1
-        if self.million_list[self.last_pick_rank] == mn:
-            r = self.last_pick_rank
-        else:
-            for x in range(0, len(self.million_list)):
-                if self.million_list[x] == mn:
-                    r = x
-                    break
-        if r >= 0:
-            self.million_list.pop(r)
-
     def random_pick(self):
-        a = random.randrange(self.range_max[self.random_range - 1], self.range_max[self.random_range])
-        b = a*len(self.million_list)/self.range_max[-1]
-        c = int(b)
-        if c < 0 or c >= len(self.million_list):
-            print("Picking range[" + str(self.random_range) + "] = [ " + str(self.range_max[self.random_range - 1]) + " , " + str(self.range_max[self.random_range]) + " )")
-            print(str(c) + " = " + str(a) + " * " + str(len(self.million_list)) + " / " + str(self.range_max[-1]))
-            if c < 0:
-                c = 0
+        while len(self.range_list) > 0:
+            x = random.randrange(0, len(self.range_list))
+            a = self.range_list[x]
+            l = len(self.range_names[a])
+            if l == 0:
+                print("Range names " + str(a) + " is empty")
+                self.range_list.pop(x)
             else:
-                c= len(self.million_list) - 1
-        x = self.million_list[c]
-        self.last_pick_rank = c
-        return x
+                r = random.randrange(0,l)
+                target = self.range_names[a][r]
+                if target.domain in self.already_processed:
+                    self.nb_collisions += 1
+                    self.range_names[a].pop(r)
+                else:
+                    return target
+        print("Error: trying to get pick from empty list!")
+        return million_target("", 0, 0)
 
-    def next_random_range(self):
-        ret = False
-        if len(self.million_list) > 0:
-            ret = True
-            next_range = self.random_range + 1
-            if next_range >= len(self.range_max):
-                next_range = 1
-            self.random_range = next_range
-        return ret
+    def mark_read(self, name):
+        if not name in self.already_processed:
+            self.already_processed.add(name)
+            self.names_count -= 1
 
     def nb_ranges(self):
-        return len(self.range_max) - 1
+        return len(self.range_names)
 
     def nb_names(self):
-        return len(self.million_list)
+        return self.names_count
 
 class million_time(object):
     def __init__(self):

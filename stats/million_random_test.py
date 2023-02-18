@@ -88,10 +88,9 @@ trials_done = 0
 nb_rounds = 0
 remains = 0
 range_total = []
+result_list = []
 
 print("Targeting " + str(trials_required) + " names in " + str(mr.nb_ranges()) + " ranges out of " + str(mr.nb_names()))
-for range_index in range(0, len(mr.range_max)):
-    print("range limit [" + str(range_index) + "]: " + str(mr.range_max[range_index]))
 
 for x in range(0, mr.nb_ranges()):
     range_total.append(0)
@@ -112,30 +111,27 @@ while trials_done < trials_required:
                 print("Error on beginning of round " + str(nb_rounds) + ", " + str(mr.nb_names()) + " names left instead of " + str(remains))
                 exit(1)
             load_end = time.time()
+            for a in range(0, len(mr.range_names)):
+                print("Range " + str(a) + ", " + str(len(mr.range_names[a])) + " names")
+            for r in range(0, len(mr.range_list)):
+                print("Range[" + str(r) + "] = " + str(mr.range_list[r]))
             print("now targeting " + str(mr.nb_names()) + " names in " + str(mr.nb_ranges()) + " ranges, loaded in " + str(load_end - round_start))
         pick_start = time.time()
         for trial in range(0, nb_trials_per_round):
-            x = mr.random_pick()
-            if x == "":
-                # current range is empty
-                print("Range number " + str(mr.random_range) + " is empty.")
-                if not mr.next_random_range():
-                    # no other empty range
-                    print("Error. All ranges empty after " + str(trials_done) + " trials, but loop did not stop.")
-                    exit (1)
-                else:
-                    x =  mr.random_pick()
-                    if x == "":
-                        print("Error. Range " + str(mr.random_range) + " is empty, yet was picked.")
-                        exit(1)
-            trials_done += 1
-            range_total[ref_dict[x]] += 1
-            already_tested.append(x)
-            mr.mark_read(x)
-            if not mr.next_random_range():
+            if mr.nb_names() == 0:
                 # no other empty range
                 print("All ranges empty after " + str(trials_done) + " trials.")
                 break
+            x = mr.random_pick()
+            if x.domain == "":
+                print("Error after " + str(trial) + " trials, empty response.")
+                print("Names remaining: " + str(mr.nb_names()))
+                break
+            trials_done += 1
+            range_total[ref_dict[x.domain]] += 1
+            already_tested.append(x.domain)
+            mr.mark_read(x.domain)
+            result_list.append(x)
         remains = mr.nb_names()
         round_end = time.time()
         print("After " + str(nb_rounds) + " rounds in " + str(round_end - pick_start) + ", " + str(remains) + " names remain.")
@@ -150,6 +146,8 @@ while trials_done < trials_required:
         print("Cannot perform round <" + str(nb_rounds) + ">\nException: " + str(e))
         print("Giving up");
         exit(1)
+    if mr.nb_names() == 0:
+        break
         
 
 # Double check that the distribution of names is maintained after parsing as zones.
@@ -160,24 +158,38 @@ total_per_level = [0,0,0,0,0,0]
 nb_direct_find = 0
 nb_suffix_find = 0
 nb_not_found = 0
-for name in already_tested:
-    y = name
-    million_rank = 5
+nb_rank_not_match = 0
+check_for_dup = set()
+nb_duplicates = 0
+for target in result_list:
+    y = target.domain
+    million_range = 5
     if y.endswith("."):
         y = y[0:-1]
     if y in zp.millions:
-        million_rank = zp.millions[y]
+        million_range = zp.millions[y]
         nb_direct_find += 1
     else:
         x = get_prefix(y,ps)
         if x in zp.millions:
-            million_rank = zp.millions[x]
+            million_range = zp.millions[x]
             nb_suffix_find += 1
         else:
             nb_not_found += 1
-    total_per_level[million_rank] += 1
+    if million_range != target.million_range:
+        if nb_rank_not_match < 10:
+            print("Target(" + target.domain + ", " + str(target.million_rank)  + ", " + str(target.million_range) + ") ranked as: " + str(million_range))
+        nb_rank_not_match += 1
+    if target.domain in check_for_dup:
+        if nb_duplicates < 10:
+            print("Target(" + target.domain + ", " + str(target.million_rank) + ", " + str(target.million_range) + ") already found!")
+        nb_duplicates += 1
+    else:
+        check_for_dup.add(target.domain)
+    total_per_level[million_range] += 1
 
 print("Found direct: " + str(nb_direct_find) + ", suffix: " + str(nb_suffix_find) + ", not: " + str(nb_not_found))
+print("Rank mismatch: " + str(nb_rank_not_match) + ", duplicates: " + str(nb_duplicates))
 for i in range(0,len(total_per_level)):
     print("Level " + str(i) + ": " + str(total_per_level[i]))
 

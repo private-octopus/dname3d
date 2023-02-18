@@ -21,11 +21,11 @@ import os
 
 def load_names(result_file, targets, ps, i2a, stats): 
     with open(result_file, "at") as f_out:
-        for domain in targets:
+        for target in targets:
             try:
                 d = dnslook.dnslook()
                 # Get the name servers, etc. 
-                d.get_domain_data(domain, ps, i2a, stats)
+                d.get_domain_data(target.domain, ps, i2a, stats, rank=target.million_rank, range=target.million_range)
                 # Write the json line in the result file.
                 f_out.write(d.to_json() + "\n")
             except Exception as e:
@@ -113,29 +113,29 @@ def main():
     # as encoded in the "million_random" class
     pick_start = time.time()
     print("Ready after " + str(pick_start - start_time))
-    stat_name = ["a", "aaaa", "ns", "cname", "server", "asn"]
+    stat_name = ["a", "aaaa", "ns", "algo", "cname", "server", "asn"]
     stats = []
     for x in range(0,7):
         stats.append(0)
     targets = []
     while len(targets) < nb_trials:
-        domain = mr.random_pick()
-        if domain == "":
-            if not mr.next_random_range():
+        target = mr.random_pick()
+        if target.domain == "":
+            if mr.nb_names() == 0:
                 # no other empty range
-                print("Error. All ranges empty after " + str(trials_done) + " trials, but loop did not stop.")
+                print("Error. All ranges empty after " + str(len(targets) + 1) + " trials, but loop did not stop.")
                 break
             else:
-                x =  mr.random_pick()
-                if x == "":
+                target =  mr.random_pick()
+                if x.domain == "":
                     print("Error. Range " + str(mr.random_range) + " is empty, yet was picked.")
                     break
         else:
-            targets.append(domain)
-            mr.mark_read(domain)
-        if not mr.next_random_range():
+            targets.append(target)
+            mr.mark_read(target)
+        if mr.nb_names() == 0:
             # no other empty range
-            print("All ranges empty after " + str(trials_done) + " trials.")
+            print("All ranges empty after " + str(len(targets) + 1) + " trials.")
             break
     nb_assessed = len(targets)
 
@@ -143,7 +143,7 @@ def main():
         target_file = temp_prefix + "_targets.txt"
         with open(target_file, "wt") as tf:
             for target in targets:
-                tf.write(target+"\n");
+                tf.write(target.domain + "," + str(target.million_rank) + "," + str(target.million_range) + "\n");
 
     # Once the required number of targets has been selected, prepare parallel threads
     ready_time = time.time()
@@ -214,7 +214,7 @@ def main():
         print("\nSummary took " + str(done_time - bucket_time))
 
     print("Assessed " + str(nb_assessed) + " domains in " + str(done_time - start_time))
-    for x in range(0,6):
+    for x in range(0,7):
         print("Time " + stat_name[x] + ": " + str(stats[x]/nb_assessed))
 
 # actual main program, can be called by threads, etc.

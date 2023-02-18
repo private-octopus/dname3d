@@ -55,6 +55,8 @@ class dnslook:
         self.resolver=dns.resolver.Resolver()
         self.resolver.timeout = 1
         self.resolver.lifetime = 3
+        self.million_rank = -1
+        self.million_range = -1
 
     def to_json_array(x):
         jsa = "["
@@ -76,6 +78,10 @@ class dnslook:
         js += ",\"ds_algo\":" + dnslook.to_json_array(self.ds_algo)
         js += ",\"cname\":" + dnslook.to_json_array(self.cname)
         js += ",\"server\":\"" + self.server + "\""
+        if self.million_rank >= 0:
+            js += ",\"rank\":" + str(self.million_rank)
+        if self.million_range >= 0:
+            js += ",\"range\":" + str(self.million_range)
         if self.as_number > 0:
             js += ",\"as_number\":" + str(self.as_number)
         js += "}"
@@ -106,6 +112,11 @@ class dnslook:
                     self.as_number = jd['as_number']
                 if 'ds_algo' in jd:
                     self.ds_algo = jd['ds_algo']
+                if 'rank' in jd:
+                    self.million_rank = jd['rank']
+                if 'range' in jd:
+                    self.million_range = jd['range']
+
         except Exception as e:
             traceback.print_exc()
             print("Cannot parse <" + js + ">")
@@ -198,8 +209,12 @@ class dnslook:
             self.as_number = i2a.get_asn(self.ip[0])
 
 
-    def get_domain_data(self, domain, ps, i2a, stats):
+    def get_domain_data(self, domain, ps, i2a, stats, rank=-1, range=-1):
         self.domain = domain
+        if rank >= 0:
+            self.million_rank = rank
+        if range >= 0:
+            self.million_range = range
         start_time = time.time()
         self.get_a()
         a_time = time.time()
