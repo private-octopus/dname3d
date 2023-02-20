@@ -9,6 +9,7 @@ import time
 import zoneparser
 import pubsuffix
 import dnslook
+import zonesampler
 
 def time_trial(x, nb_trials, mfn):
     time_start = time.time()
@@ -64,9 +65,10 @@ def get_prefix(name,ps):
 
 #main
 million_file = sys.argv[1]
+zone_sample_file = sys.argv[2]
 already_tested = []
-nb_trials_per_round = int(sys.argv[2])
-public_suffix_file = sys.argv[3]
+nb_trials_per_round = int(sys.argv[3])
+public_suffix_file = sys.argv[4]
 #for x in [ "dict", "set", "list"]:
 #    time_trial(x, nb_trials_per_round, million_file)
 ps = pubsuffix.public_suffix()
@@ -76,14 +78,38 @@ if not ps.load_file(public_suffix_file):
 
 print("Test sanity of " + dnslook.sanitize("1234567890._-.abc\032-DeF-xyZ"))
 
-ref_dict, ref_ranges = million_random.million_dict(million_file,100,10)
-print("Reference: " + str(len(ref_dict)) + " names in " + str(ref_ranges) + " ranges.")
+#ref_dict, ref_ranges = million_random.million_dict(million_file,100,10)
+#print("Reference: " + str(len(ref_dict)) + " names in " + str(ref_ranges) + " ranges.")
 
 mr = million_random.million_random(100, 10)
 mr.load(million_file)
+
+# check duplicate in zone file:
+zone_check = set()
+nb_zone_dup = 0
+nb_zone_total = 0
+for line in open(zone_sample_file,"rt"):
+    zs = zonesampler.one_zone_sample("", "")
+    zs.from_json(line)
+    if zs.domain.endswith("."):
+        zs.domain = zs.domain[0:-1]
+    if nb_zone_total < 10:
+        print("Zone: <" + zs.domain + ">")
+    nb_zone_total += 1
+    zone_check.add(zs.domain)
+    if zs.domain in mr.already_processed:
+        if nb_zone_dup < 10:
+            print("Already in millions: " + zs.domain)
+        nb_zone_dup += 1
+       
+print("Out of " + str(nb_zone_total) + " in " + zone_sample_file + ", " + str(nb_zone_dup) + " duplicates.")
+
+# Add the names from the zone sample file
+mr.load_zone_sample(zone_sample_file)
+
 trials_required = mr.nb_names()
-if len(sys.argv) > 4:
-    trials_required = int(sys.argv[4])
+if len(sys.argv) > 5:
+    trials_required = int(sys.argv[5])
 trials_done = 0
 nb_rounds = 0
 remains = 0
@@ -96,26 +122,27 @@ for x in range(0, mr.nb_ranges()):
     range_total.append(0)
 
 while trials_done < trials_required:
+    # simulate running a shell script N names at a time
     try:
         nb_rounds += 1       
         round_start = time.time()
         if len(already_tested) > 0:
-            # simulate running a shell scrip N names at a time
             for tested in already_tested:
                 mr.set_already_processed(tested)
             if len(mr.already_processed) != len(already_tested):
                 print("Error. Found " + str(len(mr.already_processed)) + " processed entries, expected " + str(len(already_tested)) )
                 exit(1)
             mr.load(million_file)
+            mr.load_zone_sample(zone_sample_file)
             if remains != mr.nb_names():
                 print("Error on beginning of round " + str(nb_rounds) + ", " + str(mr.nb_names()) + " names left instead of " + str(remains))
                 exit(1)
-            load_end = time.time()
-            for a in range(0, len(mr.range_names)):
-                print("Range " + str(a) + ", " + str(len(mr.range_names[a])) + " names")
-            for r in range(0, len(mr.range_list)):
-                print("Range[" + str(r) + "] = " + str(mr.range_list[r]))
-            print("now targeting " + str(mr.nb_names()) + " names in " + str(mr.nb_ranges()) + " ranges, loaded in " + str(load_end - round_start))
+        load_end = time.time()
+        for a in range(0, len(mr.range_names)):
+            print("Range " + str(a) + ", " + str(len(mr.range_names[a])) + " names")
+        for r in range(0, len(mr.range_list)):
+            print("Range[" + str(r) + "] = " + str(mr.range_list[r]))
+        print("now targeting " + str(mr.nb_names()) + " names in " + str(mr.nb_ranges()) + " ranges, loaded in " + str(load_end - round_start))
         pick_start = time.time()
         for trial in range(0, nb_trials_per_round):
             if mr.nb_names() == 0:
@@ -128,10 +155,14 @@ while trials_done < trials_required:
                 print("Names remaining: " + str(mr.nb_names()))
                 break
             trials_done += 1
-            range_total[ref_dict[x.domain]] += 1
             already_tested.append(x.domain)
             mr.mark_read(x.domain)
             result_list.append(x)
+            if x.million_range < 0 or x.million_range >= len(range_total):
+                print("Unexpected range = " + str(x.million_range) + " for " + x.domain)
+                exit(1)
+            else:
+                range_total[x.million_range] += 1
         remains = mr.nb_names()
         round_end = time.time()
         print("After " + str(nb_rounds) + " rounds in " + str(round_end - pick_start) + ", " + str(remains) + " names remain.")
@@ -149,14 +180,11 @@ while trials_done < trials_required:
     if mr.nb_names() == 0:
         break
         
-
 # Double check that the distribution of names is maintained after parsing as zones.
-zp = zoneparser.zone_parser2(ps)
-zp.load_million(million_file)
-print("\nLoaded " + str(len(zp.millions)) + " millions.")
+md,nmd = million_random.million_dict(million_file, 100, 10)
+print("\nLoaded " + str(len(md)) + " millions.")
 total_per_level = [0,0,0,0,0,0]
 nb_direct_find = 0
-nb_suffix_find = 0
 nb_not_found = 0
 nb_rank_not_match = 0
 check_for_dup = set()
@@ -164,18 +192,17 @@ nb_duplicates = 0
 for target in result_list:
     y = target.domain
     million_range = 5
-    if y.endswith("."):
-        y = y[0:-1]
-    if y in zp.millions:
-        million_range = zp.millions[y]
+    if y in md:
+        million_range = md[y]
+        nb_direct_find += 1
+    elif y in zone_check:
+        million_range = 5
         nb_direct_find += 1
     else:
-        x = get_prefix(y,ps)
-        if x in zp.millions:
-            million_range = zp.millions[x]
-            nb_suffix_find += 1
-        else:
-            nb_not_found += 1
+        if nb_not_found < 10:
+            print("Not found: " + y)
+        nb_not_found += 1
+
     if million_range != target.million_range:
         if nb_rank_not_match < 10:
             print("Target(" + target.domain + ", " + str(target.million_rank)  + ", " + str(target.million_range) + ") ranked as: " + str(million_range))
@@ -188,7 +215,7 @@ for target in result_list:
         check_for_dup.add(target.domain)
     total_per_level[million_range] += 1
 
-print("Found direct: " + str(nb_direct_find) + ", suffix: " + str(nb_suffix_find) + ", not: " + str(nb_not_found))
+print("Found direct: " + str(nb_direct_find) + ", not: " + str(nb_not_found))
 print("Rank mismatch: " + str(nb_rank_not_match) + ", duplicates: " + str(nb_duplicates))
 for i in range(0,len(total_per_level)):
     print("Level " + str(i) + ": " + str(total_per_level[i]))

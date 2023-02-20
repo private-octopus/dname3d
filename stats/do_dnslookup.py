@@ -59,16 +59,17 @@ def load_dns_look_up_bucket(bucket):
 # Main
 def main():
     start_time = time.time()
-    if len(sys.argv) != 6 and len(sys.argv) != 7:
-        print("Usage: " + sys.argv[0] + " nb_trials ip2as.csv publicsuffix.dat million_domain_list result_file [tmp_prefix]")
+    if len(sys.argv) != 7 and len(sys.argv) != 8:
+        print("Usage: " + sys.argv[0] + " nb_trials ip2as.csv publicsuffix.dat million_domain_list com_sample result_file [tmp_prefix]")
         exit(1)
     nb_trials = int(sys.argv[1])
     ip2as_file = sys.argv[2]
     public_suffix_file = sys.argv[3]
     million_file = sys.argv[4]
-    result_file = sys.argv[5]
-    if len(sys.argv) == 7:
-        temp_prefix = sys.argv[6]
+    com_sample = sys.argv[5]
+    result_file = sys.argv[6]
+    if len(sys.argv) == 8:
+        temp_prefix = sys.argv[7]
     else:
         temp_prefix = ""
 
@@ -105,9 +106,13 @@ def main():
         print("Giving up");
         exit(1)
     print("Loaded " + str(len(mr.already_processed)) + " names.")
+
+
     # Load the million file. The loading process will not load the names 
     # marked as already processed in the previous loop.
     mr.load(million_file)
+    # Add the names from the zone sample file
+    mr.load_zone_sample(com_sample)
     # Once everything is ready, start getting the requested number of new names
     # The names are picked at random from five zones in the million names list
     # as encoded in the "million_random" class
