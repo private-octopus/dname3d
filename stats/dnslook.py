@@ -209,12 +209,15 @@ class dnslook:
             self.as_number = i2a.get_asn(self.ip[0])
 
 
-    def get_domain_data(self, domain, ps, i2a, stats, rank=-1, range=-1):
+    def get_domain_data(self, domain, ps, i2a, stats, rank=-1, rng=-1):
         self.domain = domain
         if rank >= 0:
             self.million_rank = rank
-        if range >= 0:
-            self.million_range = range
+        if rng >= 0:
+            self.million_range = rng
+        else:
+            print("No range for " + self.domain)
+
         start_time = time.time()
         self.get_a()
         a_time = time.time()

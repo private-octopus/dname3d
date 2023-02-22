@@ -25,12 +25,12 @@ def load_names(result_file, targets, ps, i2a, stats):
             try:
                 d = dnslook.dnslook()
                 # Get the name servers, etc. 
-                d.get_domain_data(target.domain, ps, i2a, stats, rank=target.million_rank, range=target.million_range)
+                d.get_domain_data(target.domain, ps, i2a, stats, rank=target.million_rank, rng=target.million_range)
                 # Write the json line in the result file.
                 f_out.write(d.to_json() + "\n")
             except Exception as e:
                 traceback.print_exc()
-                print("Cannot assess domain <" + domain  + ">\nException: " + str(e))
+                print("Cannot assess domain <" + target.domain  + ">\nException: " + str(e))
                 break
 
 
@@ -113,6 +113,9 @@ def main():
     mr.load(million_file)
     # Add the names from the zone sample file
     mr.load_zone_sample(com_sample)
+    # Show the state of the random loader
+    for a in range(0, len(mr.range_names)):
+        print("Range " + str(a) + ", " + str(len(mr.range_names[a])) + " names")
     # Once everything is ready, start getting the requested number of new names
     # The names are picked at random from five zones in the million names list
     # as encoded in the "million_random" class
