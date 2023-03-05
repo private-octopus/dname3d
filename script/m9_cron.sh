@@ -1,6 +1,6 @@
 # !/bin/bash
 NBSAMPLES=$1
-TODAY=$(date +%d)
+TODAY=$(date +%y-%m-%d)
 YEAR=$(date -d $TODAY +%Y)
 MM=$(date -d $TODAY +%m)
 FIRST_DAY=$(date -d $YEAR-$MM-01 +%Y-%m-%d)
