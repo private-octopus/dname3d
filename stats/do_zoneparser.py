@@ -109,6 +109,7 @@ def main():
         zone_done_time = time.time()
         print("\nSummary took " + str(zone_done_time - bucket_time))
     # save
+    print("Save to file " + ns_out);
     zp.save(ns_out)
     final_time = time.time()
     print("Save took " + str(final_time - zone_done_time))

@@ -25,7 +25,7 @@ fi
 # TODO locate com zone required for parsing or sampling
 #
 
-COM_SAMPLES="/home/huitema/com_stats/com_samples_$YYYYMM.csv"
+COM_SAMPLES="/home/huitema/com_samples/com_samples_$YYYYMM.csv"
 COM_STATS="/home/huitema/com_stats/com_stats_$YYYYMM.csv"
 PUB_S="../data/public_suffix_list.dat"
 DUP_S="../data/service-duplicates.csv"
@@ -35,14 +35,14 @@ for i in `ls /data/ZFA-backups/$YYYYMM*/com/com.zone`; do
         X="$i"; 
     fi; 
 done
-if [ -f COM_STATS ];
+if [ -f $COM_STATS ];
 then
     echo "COM_STATS already computed";
 else
     if [ ! -z "$X" ]; then
         S_TEMP=/home/huitema/tmp_com_zone_
         rm $S_TEMP*
-        python3 do_zoneparser.py $COM_STATS $X $PUB_S $DUP_S %MILLION $S_TEMP
+        python3 do_zoneparser.py $COM_STATS $X $PUB_S $DUP_S $MILLION $S_TEMP
         rm $S_TEMP*
     fi
 fi
@@ -69,7 +69,7 @@ echo "Adding $NBSAMPLES to the DNS processed list"
     ip2as=../data/ip2as.csv
     TEMP=/home/huitema/tmp/dnslookup_
     rm $TEMP*
-    python3 do_dnslookup.py $NBSAMPLES $COM_SAMPLES $ip2as $PUB_S $MILLION $RESULT $TEMP
+    /usr/local/python3.8/bin/python3 do_dnslookup.py $NBSAMPLES $ip2as $PUB_S $MILLION $COM_SAMPLES $RESULT $TEMP
 fi
 
 if [ -f $RESULT ]
@@ -79,7 +79,7 @@ then
     m9_day="$YEAR-$MM-$DAY"
     m9_file="/home/huitema/M9/M9-$m9_day.csv"
     echo "Computing M9 in $m9_file from $com_stats and $mill_stats"
-    python3 ./dnslookup_stats.py $RESULT $MILLION $PUB_S $DUP_S $COM_STATS $m9_file $m9_day
+    /usr/local/python3.8/bin/python3 ./dnslookup_stats.py $RESULT $MILLION $PUB_S $DUP_S $COM_STATS $m9_file $m9_day
     echo "Writing M9 to ITHI staging server"
     cd /home/huitema/
     rsync -Cav -e "ssh -l octo0" M9 octo0@ithi.research.icann.org:data
