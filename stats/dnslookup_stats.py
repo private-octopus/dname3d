@@ -239,7 +239,7 @@ for dns_lookup in stats:
     #    if nb_fail > 10:
     #        break
     m_class = dns_lookup.million_range
-    if m_class < 5:
+    if m_class >= 0 and m_class < 5:
         for ns_name in dns_lookup.ns:
             ns_suffix = zoneparser.extract_server_suffix(ns_name, ps, zp.dups);
             if ns_suffix in ns_this_name:
