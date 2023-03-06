@@ -142,7 +142,7 @@ class stats_one:
             cumul += entry.count
             if self.p50 == 0 and cumul >= cumul50:
                 self.p50 = rank
-            if cumul >= cumul90:
+            if self.p90 == 0 and cumul >= cumul90:
                 self.p90 = rank
             if rank < 5 and not entry.name in top_set:
                 top_set.add(entry.name)
