@@ -48,10 +48,14 @@ ps = pubsuffix.public_suffix()
 if not ps.load_file(public_suffix_file):
     print("Could not load the suffixes from" + public_suffix_file )
 
+stats = []
+for x in range(0,7):
+    stats.append(0)
+
 v = dnslook.dnslook()
 
 for domain in domains:
-    v.get_domain_data(domain, ps, i2a)
+    v.get_domain_data(domain, ps, i2a, stats, rank=7)
     js = v.to_json()
     print(js)
     w = dnslook.dnslook()

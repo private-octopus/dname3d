@@ -50,10 +50,13 @@ class dnslook:
         self.ns = []
         self.cname = []
         self.server = ""
+        self.ds_algo = []
         self.as_number = 0
         self.resolver=dns.resolver.Resolver()
         self.resolver.timeout = 1
         self.resolver.lifetime = 3
+        self.million_rank = -1
+        self.million_range = -1
 
     def to_json_array(x):
         jsa = "["
@@ -68,12 +71,17 @@ class dnslook:
 
     def to_json(self):
         js = "{\"domain\":\"" + self.domain + "\""
-        js += ",\"ip\":" + dnslook.to_json_array(self.ip)       
+        js += ",\"ip\":" + dnslook.to_json_array(self.ip)
         js += ",\"ipv6\":" + dnslook.to_json_array(self.ipv6)
         js += ",\"zone\":\"" + self.zone + "\""
         js += ",\"ns\":" + dnslook.to_json_array(self.ns)
+        js += ",\"ds_algo\":" + dnslook.to_json_array(self.ds_algo)
         js += ",\"cname\":" + dnslook.to_json_array(self.cname)
         js += ",\"server\":\"" + self.server + "\""
+        if self.million_rank >= 0:
+            js += ",\"rank\":" + str(self.million_rank)
+        if self.million_range >= 0:
+            js += ",\"range\":" + str(self.million_range)
         if self.as_number > 0:
             js += ",\"as_number\":" + str(self.as_number)
         js += "}"
@@ -102,6 +110,13 @@ class dnslook:
                     self.server = jd['server']
                 if 'as_number' in jd:
                     self.as_number = jd['as_number']
+                if 'ds_algo' in jd:
+                    self.ds_algo = jd['ds_algo']
+                if 'rank' in jd:
+                    self.million_rank = jd['rank']
+                if 'range' in jd:
+                    self.million_range = jd['range']
+
         except Exception as e:
             traceback.print_exc()
             print("Cannot parse <" + js + ">")
@@ -143,6 +158,23 @@ class dnslook:
             except Exception as e:
                 nameparts.pop(0)
 
+    def get_ds_algo(self):
+        if self.zone != "":
+            # we assume that "get_ds_algo" is called after "get_ns", so
+            # we use the same zone definition.
+            try:
+                ds_recv =  self.resolver.query(self.zone, 'DS')
+                for ds in ds_recv:
+                    ds_parts = str(ds).split(" ")
+                    if len(ds_parts) > 2:
+                        self.ds_algo.append(ds_parts[1])
+                    else:
+                        print("Malformed DS for " + self.zone + ": " + str(ds))
+            except dns.resolver.NoAnswer:
+                pass
+            except Exception as e:
+                print("Exception when querying DS for " + self.zone + ": " + str(e))
+
     def get_cname(self):
         self.cname = []
         candidate = self.domain
@@ -177,8 +209,15 @@ class dnslook:
             self.as_number = i2a.get_asn(self.ip[0])
 
 
-    def get_domain_data(self, domain, ps, i2a, stats):
+    def get_domain_data(self, domain, ps, i2a, stats, rank=-1, rng=-1):
         self.domain = domain
+        if rank >= 0:
+            self.million_rank = rank
+        if rng >= 0:
+            self.million_range = rng
+        else:
+            print("No range for " + self.domain)
+
         start_time = time.time()
         self.get_a()
         a_time = time.time()
@@ -186,6 +225,8 @@ class dnslook:
         aaaa_time = time.time()
         self.get_ns()
         ns_time = time.time()
+        self.get_ds_algo()
+        ds_algo_time = time.time()
         self.get_cname()
         cname_time = time.time()
         self.get_server(ps)
@@ -195,7 +236,8 @@ class dnslook:
         stats[0] += a_time - start_time
         stats[1] += aaaa_time - a_time
         stats[2] += ns_time - aaaa_time
-        stats[3] += cname_time - ns_time
-        stats[4] += server_time - cname_time
-        stats[5] += asn_time - server_time
+        stats[3] += ds_algo_time - ns_time
+        stats[4] += cname_time - ds_algo_time
+        stats[5] += server_time - cname_time
+        stats[6] += asn_time - server_time
 

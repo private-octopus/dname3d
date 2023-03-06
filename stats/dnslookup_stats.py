@@ -170,7 +170,7 @@ class stats_one:
 
 
 # Main
-
+#/usr/local/python3.8/bin/python3 ./dnslookup_stats.py $RESULT $MILLION $PUB_S $DUP_S $COM_STATS $m9_file $m9_day
 million_file = sys.argv[2]
 public_suffix_file = sys.argv[3]
 dups_file = sys.argv[4]
@@ -232,21 +232,23 @@ for dns_lookup in stats:
     ns_this_name = dict()
     if dns_lookup.domain == "":
         continue
-    m_class = get_million_class(dns_lookup.domain, zp.millions)
-    if m_class > 4:
-        print("could not find <" + dns_lookup.domain + "> in millions.")
-        nb_fail += 1
-        if nb_fail > 10:
-            break
-    for ns_name in dns_lookup.ns:
-        ns_suffix = zoneparser.extract_server_suffix(ns_name, ps, zp.dups);
-        if ns_suffix in ns_this_name:
-            ns_this_name[ns_suffix] += 1
-        else:
-            ns_this_name[ns_suffix] = 1
-    for ns_suffix in ns_this_name:
-        level_stats[m_class].add(ns_suffix, 1)
-    level_stats[m_class].add_name_count(1)
+    # m_class = get_million_class(dns_lookup.domain, zp.millions)
+    #if m_class > 4:
+    #    print("could not find <" + dns_lookup.domain + "> in millions.")
+    #    nb_fail += 1
+    #    if nb_fail > 10:
+    #        break
+    m_class = dns_lookup.million_range
+    if m_class >= 0 and m_class < 5:
+        for ns_name in dns_lookup.ns:
+            ns_suffix = zoneparser.extract_server_suffix(ns_name, ps, zp.dups);
+            if ns_suffix in ns_this_name:
+                ns_this_name[ns_suffix] += 1
+            else:
+                ns_this_name[ns_suffix] = 1
+        for ns_suffix in ns_this_name:
+            level_stats[m_class].add(ns_suffix, 1)
+        level_stats[m_class].add_name_count(1)
 
 # Compute the statistics for each category
 top_set = set()
