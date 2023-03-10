@@ -43,7 +43,6 @@ else
         S_TEMP=/home/huitema/tmp_com_zone_
         rm $S_TEMP*
         python3 do_zoneparser.py $COM_STATS $X $PUB_S $DUP_S $MILLION $S_TEMP
-        rm $S_TEMP*
     fi
 fi
 

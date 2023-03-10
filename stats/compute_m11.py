@@ -11,6 +11,7 @@
 
 import sys
 import dnslook
+import json
 
 class m11_computer:
     def __init__(self):
@@ -63,7 +64,7 @@ m11_csv = sys.argv[3]
 
 m11 = m11_computer()
 m11.load(dns_json)
-print("Loaded " + str(m11.total) + " dns_json entries.")
+print("\nLoaded " + str(m11.total) + " dns_json entries.")
 m11.save_m11(m11_date, m11_csv)
 print("M11 for " + m11_date + " saved in " + m11_csv)
 
