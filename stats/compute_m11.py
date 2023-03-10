@@ -40,17 +40,17 @@ class m11_computer:
             except Exception as e:
                 traceback.print_exc()
                 print("Cannot parse <" + line  + ">\nException: " + str(e))
-            if loaded%500 == 0:
+            if self.total%500 == 0:
                 sys.stdout.write(".")
                 sys.stdout.flush()
 
     def save_m11(self, m11_date, m11_csv):
         with open(m11_csv, "wt") as F:
             for i in range(0,6):
-                algo_list = self.tab[dns_look.million_range]
+                algo_list = self.tab[i]
                 for algo in algo_list:
                     fraction = algo_list[algo] / self.loaded[i]
-                    F.write("M11." + str(i+1) + "," + m11_date + ",v2.0, " + str(algo) + "," + str(fraction) + "\n")
+                    F.write("M11." + str(i+1) + "," + m11_date + ",v2.0," + str(algo) + "," + str(fraction) + "\n")
 
 # main
 
