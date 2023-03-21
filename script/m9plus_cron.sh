@@ -90,7 +90,7 @@ then
     /usr/local/python3.8/bin/python3 ./compute_m11.py m11_day $RESULT $root_stats $m11_file
 fi
 
-if [-f $RESULT]
+if [ -f $RESULT ]
 then
     cd /home/huitema/
     echo "Writing M9 to ITHI staging server"

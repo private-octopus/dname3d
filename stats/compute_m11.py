@@ -142,7 +142,7 @@ class m11_computer:
             dns_look = dnslook.dnslook()
             try:
                 dns_look.from_json(line)
-                if dns_look.million_range >= 0 and dns_look.million_range < 6:
+                if dns_look.million_range >= 0 and dns_look.million_range <= 6:
                     nb_algo = len(dns_look.ds_algo)
                     if nb_algo > 0:
                         for algo in dns_look.ds_algo:
@@ -164,7 +164,7 @@ class m11_computer:
                 F.write("M11.1," + m11_date + ",v2.0," + str(algo) + "," + str(self.gtld_algos) + "\n")
             for algo in self.cctld_algos:
                 F.write("M11.2," + m11_date + ",v2.0," + str(algo) + "," + str(self.cctld_algos) + "\n")
-            for i in range(0,6):
+            for i in range(0,len(self.tab)):
                 algo_list = self.tab[i]
                 for algo in algo_list:
                     fraction = algo_list[algo] / self.loaded[i]
