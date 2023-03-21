@@ -10,7 +10,6 @@
 # - M11.1.x: % of domains in X deploying algorithm X.
 
 import sys
-from tkinter import N
 import dnslook
 import json
 import os
