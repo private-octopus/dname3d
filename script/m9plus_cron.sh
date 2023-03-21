@@ -74,7 +74,6 @@ fi
 if [ -f $RESULT ]
 then
     echo "Recomputing M9 for $YEAR-$MM-$DAY"
-    ../script/compute_m9.sh $YEAR $MM $DAY
     m9_day="$YEAR-$MM-$DAY"
     m9_file="/home/huitema/M9/M9-$m9_day.csv"
     echo "Computing M9 in $m9_file from $com_stats and $mill_stats"
@@ -84,6 +83,21 @@ then
     rsync -Cav -e "ssh -l octo0" M9 octo0@ithi.research.icann.org:data
     # scp /home/huitema/M9/M9-$YEAR-$MM-$DAY.csv octo0@ithi.research.icann.org:data/M9/
     echo "M9 updated."
+fi
+
+if [ -f $RESULT ]
+then
+    echo "Recomputing M11 for $YEAR-$MM-$DAY"
+    m11_day="$YEAR-$MM-$DAY"
+    root_stats="/home/huitema/dns_root/root_stats_$YYYYMM.csv"
+    m11_file="/home/huitema/M11/M11-$m11_day.csv"
+    echo "Computing M11 in $m11_file from $RESULT and $root_stats"
+    /usr/local/python3.8/bin/python3 ./compute_m11.py m11_day $RESULT $root_stats $m11_file
+    echo "Writing M11 to ITHI staging server"
+    cd /home/huitema/
+    rsync -Cav -e "ssh -l octo0" M11 octo0@ithi.research.icann.org:data
+    # scp /home/huitema/M11/M11-$YEAR-$MM-$DAY.csv octo0@ithi.research.icann.org:data/M11/
+    echo "M11 updated."
 fi
 
 cd $OLD_DIR
