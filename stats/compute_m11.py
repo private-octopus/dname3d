@@ -154,7 +154,7 @@ class m11_computer:
             except Exception as e:
                 traceback.print_exc()
                 print("Cannot parse <" + line  + ">\nException: " + str(e))
-            if self.total%500 == 0:
+            if self.total%5000 == 0:
                 sys.stdout.write(".")
                 sys.stdout.flush()
 
