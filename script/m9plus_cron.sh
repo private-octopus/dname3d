@@ -91,6 +91,7 @@ then
 fi
 
 if [-f $RESULT]
+then
     cd /home/huitema/
     echo "Writing M9 to ITHI staging server"
     rsync -Cav -e "ssh -l octo0" M9 octo0@ithi.research.icann.org:data
