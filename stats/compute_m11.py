@@ -161,9 +161,9 @@ class m11_computer:
     def save_m11(self, m11_date, m11_csv):
         with open(m11_csv, "wt") as F:
             for algo in self.gtld_algos:
-                F.write("M11.1," + m11_date + ",v2.0," + str(algo) + "," + str(self.gtld_algos) + "\n")
+                F.write("M11.1," + m11_date + ",v2.0," + str(algo) + "," + str(self.gtld_algos[algo]) + "\n")
             for algo in self.cctld_algos:
-                F.write("M11.2," + m11_date + ",v2.0," + str(algo) + "," + str(self.cctld_algos) + "\n")
+                F.write("M11.2," + m11_date + ",v2.0," + str(algo) + "," + str(self.cctld_algos[algo]) + "\n")
             for i in range(0,len(self.tab)):
                 algo_list = self.tab[i]
                 for algo in algo_list:
