@@ -107,7 +107,7 @@ class m11_computer:
                     for algo in self.gtld_algos:
                         F.write("gTLD," + str(algo) + "," + str(self.gtld_algos[algo]) + "\n")
                     for algo in self.cctld_algos:
-                        F.write("ccTLD," + str(algo) + "," + str(self.cctld_algos[algo]) + "\n")`
+                        F.write("ccTLD," + str(algo) + "," + str(self.cctld_algos[algo]) + "\n")
             except Exception as e:
                 traceback.print_exc()
                 print("Cannot parse <" + url  + ">\nException: " + str(e))
