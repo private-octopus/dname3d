@@ -124,7 +124,7 @@ class m11_computer:
                             if tld_class == "gTLD":
                                 self.gtld_algos[algo] = share
                             elif tld_class == "ccTLD":
-                                self.gtld_algos[algo] = share
+                                self.cctld_algos[algo] = share
                             else:
                                 print("Unexpected tld data:" + line )
                                 exit(1)
@@ -136,6 +136,8 @@ class m11_computer:
                     traceback.print_exc()
                     print("Cannot open tld data:" + root_file  + "\nException: " + str(e))
                     exit(1)
+        print("Found " + str(len(self.gtld_algos)) + " gtld algos, " + \
+            str(len(self.cctld_algos)) + " cctld algos, ")
 
     def load(self, dns_json):
         for line in open(dns_json, "rt"):
@@ -154,7 +156,7 @@ class m11_computer:
             except Exception as e:
                 traceback.print_exc()
                 print("Cannot parse <" + line  + ">\nException: " + str(e))
-            if self.total%5000 == 0:
+            if (self.total%5000) == 0:
                 sys.stdout.write(".")
                 sys.stdout.flush()
 
