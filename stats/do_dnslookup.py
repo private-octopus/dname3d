@@ -20,7 +20,7 @@ import concurrent.futures
 import os
 
 def load_names(result_file, targets, ps, i2a, stats): 
-    with open(result_file, "at") as f_out:
+    with open(result_file, "wt") as f_out:
         for target in targets:
             try:
                 d = dnslook.dnslook()
@@ -85,6 +85,8 @@ def main():
         print("Could not load <" + ip2as_file + ">")
 
     mr = million_random.million_random(100, 10)
+    already_found = set()
+    duplicates_found = 0
     # Read the names already in the result file, remove them from consideration.
     try:
         for line in open(result_file, "rt", encoding="utf-8"):
@@ -92,7 +94,11 @@ def main():
             if len(js_line) > 0:
                 w = dnslook.dnslook()
                 if w.from_json(js_line):
-                     mr.set_already_processed(w.domain)
+                    if not w.domain in already_found:
+                        already_found.add(w.domain)
+                        mr.set_already_processed(w.domain)
+                    else:
+                        duplicates_found += 1
                 else:
                     print("Cannot parse result line " + line.strip())
                     print("Closing " + result_file + " and exiting.")
@@ -105,7 +111,7 @@ def main():
         print("Cannot load file <" + result_file  + ">\nException: " + str(e))
         print("Giving up");
         exit(1)
-    print("Loaded " + str(len(mr.already_processed)) + " names.")
+    print("Loaded " + str(len(mr.already_processed)) + " names, " + str(duplicates_found) + " duplicates.")
 
 
     # Load the million file. The loading process will not load the names 
@@ -208,9 +214,21 @@ def main():
             for bucket in bucket_list:
                 if not bucket.is_complete:
                     continue
+                b_duplicates_added = 0
+                b_domains_added = 0
                 # load the domain names from the partial result files
+                # we take care to not add duplicates
                 for line in open(bucket.bucket_file_name, "rt"):
-                    f_out.write(line);
+                    js_line = line.strip()
+                    if len(js_line) > 0:
+                        w = dnslook.dnslook()
+                        if w.from_json(js_line):
+                            if not w.domain in already_found:
+                                already_found.add(w.domain)
+                                f_out.write(line);
+                        else:
+                            print("Cannot parse result line " + line.strip())
+                            continue
                 stats_index = 0
                 for line in open(bucket.stats_file_name, "rt"):
                     st = float(line.strip())
