@@ -46,11 +46,18 @@ import functools
 def load_dns_file(dns_json):
     stats = []
     loaded = 0
+    domainsFound = dict()
+    nb_domains_duplicate = 0
     for line in open(dns_json, "rt"):
         dns_look = dnslook.dnslook()
         try:
             dns_look.from_json(line)
-            stats.append(dns_look)
+            if dns_look.domain in domainsFound:
+                domainsFound[dns_look.domain] += 1
+                nb_domains_duplicate += 1
+            else:
+                domainsFound[dns_look.domain] = 1
+                stats.append(dns_look)
             loaded += 1
         except Exception as e:
             traceback.print_exc()
