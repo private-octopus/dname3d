@@ -87,7 +87,7 @@ then
     root_stats="/home/huitema/dns_root/root_stats_$YYYYMM.csv"
     m11_file="/home/huitema/M11/M11-$m11_day.csv"
     echo "Computing M11 in $m11_file from $RESULT and $root_stats"
-    /usr/local/python3.8/bin/python3 ./compute_m11.py $m11_day $RESULT $root_stats $m11_file
+    /usr/local/python3.8/bin/python3 ./compute_m11.py $m11_day $RESULT $PUB_S $DUP_S $root_stats $m11_file
 fi
 
 if [ -f $RESULT ]
