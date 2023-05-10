@@ -31,46 +31,51 @@ PUB_S="../data/public_suffix_list.dat"
 DUP_S="../data/service-duplicates.csv"
 
 X=""
-XGZ=""
-for i in `ls /data/ZFA-backups/$YYYYMM*/com/com.zone[.gz]*`; do
-    if [[ "$i" > "$X" ]]; then
-        if [[ "$i" != "$XGZ" ]]; then
-            X="$i";
-            XGZ="$X.gz";
-            if [[ "$X" == *.gz ]]; then
-              XGZ="$X";
+
+if [[ ( -f $COM_STATS && -f $COM_SAMPLES ) ]]; then
+    echo "Com samples and stats already computed";
+else
+    XGZ=""
+    for i in `ls /data/ZFA-backups/$YYYYMM*/com/com.zone[.gz]*`; do
+        if [[ "$i" > "$X" ]]; then
+            if [[ "$i" != "$XGZ" ]]; then
+                X="$i";
+                XGZ="$X.gz";
+                if [[ "$X" == *.gz ]]; then
+                  XGZ="$X";
+                fi;
             fi;
         fi;
-    fi;
-done
-if [[ "$X" == *.gz ]]; then
-    Y="/home/huitema/com_temp/latest_com_zone"
-    gunzip -c $X > $Y
-    X=$Y
-fi
-echo "X: $X"
-echo "XGZ: $XGZ"
-if [ -f $COM_STATS ];
-then
-    echo "COM_STATS already computed";
-else
-    if [ ! -z "$X" ]; then
-        S_TEMP=/home/huitema/tmp_com_zone_
-        rm $S_TEMP*
-        python3 do_zoneparser.py $COM_STATS $X $PUB_S $DUP_S $MILLION $S_TEMP
+    done
+    if [[ "$X" == *.gz ]]; then
+        Y="/home/huitema/com_temp/latest_com_zone"
+        gunzip -c $X > $Y
+        X=$Y
     fi
-fi
+    echo "X: $X"
+    echo "XGZ: $XGZ"
+    if [ -f $COM_STATS ];
+    then
+        echo "COM_STATS already computed";
+    else
+        if [ ! -z "$X" ]; then
+            S_TEMP=/home/huitema/tmp_com_zone_
+            rm $S_TEMP*
+            python3 do_zoneparser.py $COM_STATS $X $PUB_S $DUP_S $MILLION $S_TEMP
+        fi
+    fi
 
-# TODO: use com samples
-if [ -f $COM_SAMPLES ];
-then
-    echo "$COM_SAMPLES already computed";
-else
-    if [ ! -z "$X" ]; then
-        echo "Found COM zone file: $X"
-        Z_TEMP=/home/huitema/tmp/tmp_com_sample_
-        rm $Z_TEMP*
-        python3 do_zonesampler.py $COM_SAMPLES $X 1000000 $Z_TEMP
+    # TODO: use com samples
+    if [ -f $COM_SAMPLES ];
+    then
+        echo "$COM_SAMPLES already computed";
+    else
+        if [ ! -z "$X" ]; then
+            echo "Found COM zone file: $X"
+            Z_TEMP=/home/huitema/tmp/tmp_com_sample_
+            rm $Z_TEMP*
+            python3 do_zonesampler.py $COM_SAMPLES $X 1000000 $Z_TEMP
+        fi
     fi
 fi
 
