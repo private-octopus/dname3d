@@ -77,6 +77,9 @@ else
             python3 do_zonesampler.py $COM_SAMPLES $X 1000000 $Z_TEMP
         fi
     fi
+
+    # clean up the temporrary files to save disk space
+    rm /home/huitema/com_temp/*
 fi
 
 RESULT="/home/huitema/dns_millions/dns_millions_$YYYYMM.csv"
