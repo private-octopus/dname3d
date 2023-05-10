@@ -44,7 +44,7 @@ for i in `ls /data/ZFA-backups/$YYYYMM*/com/com.zone[.gz]*`; do
     fi;
 done
 if [[ "$X" == *.gz ]]; then
-    Y="/home/huitema/latest_com_zone"
+    Y="/home/huitema/com_temp/latest_com_zone"
     gunzip -c $X > $Y
     X=$Y
 fi
