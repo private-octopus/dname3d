@@ -59,9 +59,10 @@ else
         echo "COM_STATS already computed";
     else
         if [ ! -z "$X" ]; then
-            S_TEMP=/home/huitema/tmp_com_zone_
-            rm $S_TEMP*
+            S_TEMP=/home/huitema/tmp/tmp_com_zone_
+            rm -f $S_TEMP*
             python3 do_zoneparser.py $COM_STATS $X $PUB_S $DUP_S $MILLION $S_TEMP
+            rm -f $S_TEMP*
         fi
     fi
 
@@ -73,13 +74,14 @@ else
         if [ ! -z "$X" ]; then
             echo "Found COM zone file: $X"
             Z_TEMP=/home/huitema/tmp/tmp_com_sample_
-            rm $Z_TEMP*
+            rm -f $Z_TEMP*
             python3 do_zonesampler.py $COM_SAMPLES $X 1000000 $Z_TEMP
+            rm -f $Z_TEMP*
         fi
     fi
 
     # clean up the temporrary files to save disk space
-    rm /home/huitema/com_temp/*
+    rm -f /home/huitema/com_temp/*
 fi
 
 RESULT="/home/huitema/dns_millions/dns_millions_$YYYYMM.csv"
