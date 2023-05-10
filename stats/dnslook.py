@@ -51,7 +51,7 @@ class dnslook:
         self.cname = []
         self.server = ""
         self.ds_algo = []
-        self.as_number = 0
+        self.ases = []
         self.resolver=dns.resolver.Resolver()
         self.resolver.timeout = 1
         self.resolver.lifetime = 3
@@ -71,19 +71,23 @@ class dnslook:
 
     def to_json(self):
         js = "{\"domain\":\"" + self.domain + "\""
-        js += ",\"ip\":" + dnslook.to_json_array(self.ip)
-        js += ",\"ipv6\":" + dnslook.to_json_array(self.ipv6)
+        if len(self.ip) > 0:
+            js += ",\"ip\":" + dnslook.to_json_array(self.ip)
+        if len(self.ipv6) > 0:
+            js += ",\"ipv6\":" + dnslook.to_json_array(self.ipv6)
         js += ",\"zone\":\"" + self.zone + "\""
-        js += ",\"ns\":" + dnslook.to_json_array(self.ns)
+        if len(self.ns) > 0:
+            js += ",\"ns\":" + dnslook.to_json_array(self.ns)
         js += ",\"ds_algo\":" + dnslook.to_json_array(self.ds_algo)
-        js += ",\"cname\":" + dnslook.to_json_array(self.cname)
+        if len(self.cname) > 0:
+            js += ",\"cname\":" + dnslook.to_json_array(self.cname)
         js += ",\"server\":\"" + self.server + "\""
         if self.million_rank >= 0:
             js += ",\"rank\":" + str(self.million_rank)
         if self.million_range >= 0:
             js += ",\"range\":" + str(self.million_range)
-        if self.as_number > 0:
-            js += ",\"as_number\":" + str(self.as_number)
+        if len(self.ases) > 0:
+            js += ",\"ases\":" + dnslook.to_json_array(self.ases)
         js += "}"
         return(js)
     
@@ -108,8 +112,8 @@ class dnslook:
                     self.cname = jd['cname']
                 if 'server' in jd:
                     self.server = jd['server']
-                if 'as_number' in jd:
-                    self.as_number = jd['as_number']
+                if 'ases' in jd:
+                    self.ases = jd['ases']
                 if 'ds_algo' in jd:
                     self.ds_algo = jd['ds_algo']
                 if 'rank' in jd:
@@ -205,8 +209,15 @@ class dnslook:
             print("Empty table.")
 
     def get_asn(self, i2a):
-        if len(i2a.table) > 0 and len(self.ip) > 0:
-            self.as_number = i2a.get_asn(self.ip[0])
+        if len(i2a.table) > 0:
+            as_list = set()
+            for ip in self.ip:
+                as_number = i2a.get_asn(self.ip[0])
+                if not ip in as_list:
+                    as_list.add(as_number)
+            self.ases = list(as_list)
+        else:
+            print("I2A table is empty")
 
 
     def get_domain_data(self, domain, ps, i2a, stats, rank=-1, rng=-1):
@@ -241,3 +252,26 @@ class dnslook:
         stats[5] += server_time - cname_time
         stats[6] += asn_time - server_time
 
+def load_dns_file(dns_json):
+    stats = []
+    loaded = 0
+    domainsFound = dict()
+    nb_domains_duplicate = 0
+    for line in open(dns_json, "rt"):
+        dns_look = dnslook()
+        try:
+            dns_look.from_json(line)
+            if dns_look.domain in domainsFound:
+                domainsFound[dns_look.domain] += 1
+                nb_domains_duplicate += 1
+            else:
+                domainsFound[dns_look.domain] = 1
+                stats.append(dns_look)
+            loaded += 1
+        except Exception as e:
+            traceback.print_exc()
+            print("Cannot parse <" + line  + ">\nException: " + str(e))
+        if loaded%500 == 0:
+            sys.stdout.write(".")
+            sys.stdout.flush()
+    return stats

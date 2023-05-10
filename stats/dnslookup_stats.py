@@ -43,30 +43,6 @@ import concurrent.futures
 import os
 import functools
 
-def load_dns_file(dns_json):
-    stats = []
-    loaded = 0
-    domainsFound = dict()
-    nb_domains_duplicate = 0
-    for line in open(dns_json, "rt"):
-        dns_look = dnslook.dnslook()
-        try:
-            dns_look.from_json(line)
-            if dns_look.domain in domainsFound:
-                domainsFound[dns_look.domain] += 1
-                nb_domains_duplicate += 1
-            else:
-                domainsFound[dns_look.domain] = 1
-                stats.append(dns_look)
-            loaded += 1
-        except Exception as e:
-            traceback.print_exc()
-            print("Cannot parse <" + line  + ">\nException: " + str(e))
-        if loaded%500 == 0:
-            sys.stdout.write(".")
-            sys.stdout.flush()
-    return stats
-
 def get_prefix(name,ps):
     x,is_suffix = ps.suffix(name)
     if x == "" or not is_suffix:
@@ -212,7 +188,7 @@ for count in test_rank.count:
     rank_string += str(count) + ","
 print("test ranks:" + rank_string)
 
-stats = load_dns_file(sys.argv[1])
+stats = dnslook.load_dns_file(sys.argv[1])
 print("\nLoaded " + str(len(stats)) + " lines.")
 
 # Process the statistics acquired from the million list.
