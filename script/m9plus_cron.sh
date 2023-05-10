@@ -29,12 +29,27 @@ COM_SAMPLES="/home/huitema/com_samples/com_samples_$YYYYMM.csv"
 COM_STATS="/home/huitema/com_stats/com_stats_$YYYYMM.csv"
 PUB_S="../data/public_suffix_list.dat"
 DUP_S="../data/service-duplicates.csv"
+
 X=""
-for i in `ls /data/ZFA-backups/$YYYYMM*/com/com.zone`; do
+XGZ=""
+for i in `ls /data/ZFA-backups/$YYYYMM*/com/com.zone[.gz]*`; do
     if [[ "$i" > "$X" ]]; then
-        X="$i"; 
-    fi; 
+        if [[ "$i" != "$XGZ" ]]; then
+            X="$i";
+            XGZ="$X.gz";
+            if [[ "$X" == *.gz ]]; then
+              XGZ="$X";
+            fi;
+        fi;
+    fi;
 done
+if [[ "$X" == *.gz ]]; then
+    Y="/home/huitema/latest_com_zone"
+    gunzip -c $X > $Y
+    X=$Y
+fi
+echo "X: $X"
+echo "XGZ: $XGZ"
 if [ -f $COM_STATS ];
 then
     echo "COM_STATS already computed";
