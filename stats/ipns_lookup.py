@@ -8,9 +8,12 @@
 # - a list of IP and IPv6 addresses for that name
 # - a list of ASes serving these IP or IPv6 addresses
 #
+import ipaddress
+from netrc import netrc
 import dnslook
 import ip2as
 import traceback
+import sys
 
 class name_table:
     def __init__(self):
@@ -69,9 +72,9 @@ class name_table:
 #     for each name, look at the list of NS, or size N
 #     for each NS, allocate a weight 1/N*A to the each AS listed in that NS
 
-class as_report:
-    def __init__(self, asn):
-        self.asn = asn
+class group_report:
+    def __init__(self, group_key):
+        self.group_key = group_key
         self.weight = [ 0, 0, 0, 0, 0, 0]
         self.fraction = [ 0, 0, 0, 0, 0, 0]
         self.sort_weight = 0
@@ -87,7 +90,124 @@ class as_report:
         for i in range(1,6):
             self.sort_weight += self.fraction[i]
 
+class group_list:
+    def __init__(self):
+        self.group_stat = dict()
+
+    def add_group_set(self, group_set, mr):
+        weight = 1.0/len(group_set)
+        for group_key in group_set:
+            if not group_key in self.group_stat:
+                self.group_stat[group_key] = group_report(group_key)
+            self.group_stat[group_key].add_weight(weight,mr)
+
+    def set_fractions(self):
+        sum_as = group_report(0)
+        for group_key in self.group_stat:
+            for i in range(0,6):
+                sum_as.add_weight(self.group_stat[group_key].weight[i], i)
+        for group_key in self.group_stat:
+            self.group_stat[group_key].set_fraction(sum_as.weight)
+
+    def top_list(self, n):
+        self.set_fractions()
+        s_list = sorted(self.group_stat.values(), key=lambda x: x.sort_weight, reverse=True)
+        if len(s_list) > n:
+            other = group_report(0)
+            for group_data in s_list[n:]:
+                for i in range(0,6):
+                    other.fraction[i] += group_data.fraction[i]
+                    other.weight[i] += group_data.weight[i]
+            s_list = s_list[:n]
+            s_list.append(other)
+        return s_list
+
+    def save_in_order(self, title, n, as_file):
+        top_list = self.top_list(n)
+        with open(as_file, "wt") as F:
+            F.write(title + ",F100,F1000,F10K,F100K,F1M,FCom,S100,S1000,S10K,S100K,S1M,SCom\n")
+            for group_data in top_list:
+                F.write(str(group_data.group_key))
+                for i in range(0,6):
+                    F.write(","+str(group_data.fraction[i]))
+                for i in range(0,6):
+                    F.write(","+str(group_data.weight[i]))
+                F.write("\n")
+
 class as_list:
+    def __init__(self):
+        self.stats = group_list()
+        
+    def compute_as_set(nses, ns_list):
+        as_set = set()
+        for ns in nses:
+            if ns in ns_list:
+                for asn in ns_list[ns].ases:
+                    as_key = "AS" + str(asn)
+                    as_set.add(as_key)
+        return as_set
+
+    def nsas_stats(self, dns_list, ns_list):
+        for d in dns_list:
+            n = len(d.ns)
+            mr = d.million_range
+            try:
+                as_set = as_list.compute_as_set(d.ns, ns_list)
+                if len(as_set) == 0:
+                    print("Skip " + d.domain + ", " + str(len(d.ns)) + " NS, " + str(len(as_set)) + " AS.")
+                elif mr < 0 or mr > 5:
+                    print("Skip " + d.domain + ", bad million range: " + str(mr))
+                else:
+                    self.stats.add_group_set(as_set, mr)
+            except Exception as e:
+                traceback.print_exc()
+                print("Error processing NS for " + d.domain + " Range: " + str(mr) + "\nException: " + str(e))
+
+    def save_in_order(self, n, as_file):
+        self.stats.save_in_order("AS", n, as_file)
+
+class net_list:
+    def __init__(self):
+        self.stats = group_list()
+
+    def compute_net_set(nses, ns_list):
+        net_set = set()
+        for ns in nses:
+            if ns in ns_list:
+                for ip in ns_list[ns].ip:
+                    try:
+                        net = str(ipaddress.IPv4Network(ip + "/24", strict=False))
+                        net_set.add(net)
+                    except Exception as e:
+                        print("Error processing IP for " + ns + ": " + str(ip) + "\nException: " + str(e))
+                for ipv6 in ns_list[ns].ipv6:
+                    try:
+                        net = str(ipaddress.IPv6Network(ipv6 + "/48", strict=False))
+                        net_set.add(net)
+                    except Exception as e:
+                        print("Error processing IPv6 for " + ns + ": " + str(ipv6) + "\nException: " + str(e))
+        return net_set
+
+    def nsnet_stats(self, dns_list, ns_list):
+        for d in dns_list:
+            n = len(d.ns)
+            mr = d.million_range
+            try:
+                net_set = net_list.compute_net_set(d.ns, ns_list)
+                if len(net_set) == 0:
+                    print("Skip " + d.domain + ", " + str(len(d.ns)) + " NS, no IP address")
+                elif mr < 0 or mr > 5:
+                    print("Skip " + d.domain + ", bad million range: " + str(mr))
+                else:
+                    self.stats.add_group_set(net_set, mr)
+            except Exception as e:
+                traceback.print_exc()
+                print("Error processing address for " + d.domain + " Range: " + str(mr) + "\nException: " + str(e))
+
+    def save_in_order(self, n, net_file):
+        self.stats.save_in_order("Network", n, net_file)
+
+class as_list_old:
     def __init__(self):
         self.as_stat = dict()
 
@@ -104,7 +224,7 @@ class as_list:
         weight = 1.0/len(as_set)
         for as_key in as_set:
             if not as_key in self.as_stat:
-                self.as_stat[as_key] = as_report(as_key)
+                self.as_stat[as_key] = group_report(as_key)
             self.as_stat[as_key].add_weight(weight,mr)
 
     def nsas_stats(self, dns_list, ns_list):
@@ -124,7 +244,7 @@ class as_list:
                 print("Error processing " + d.domain + " Range: " + str(mr) + "\nException: " + str(e))
 
     def set_fractions(self):
-        sum_as = as_report(0)
+        sum_as = group_report(0)
         for asn in self.as_stat:
             for i in range(0,6):
                 sum_as.add_weight(self.as_stat[asn].weight[i], i)
@@ -135,7 +255,7 @@ class as_list:
         self.set_fractions()
         s_list = sorted(self.as_stat.values(), key=lambda x: x.sort_weight, reverse=True)
         if len(s_list) > n:
-            other = as_report(0)
+            other = group_report(0)
             for as_data in s_list[n:]:
                 for i in range(0,6):
                     other.fraction[i] += as_data.fraction[i]
@@ -157,14 +277,17 @@ class as_list:
                 F.write("\n")
 
 
-# TODO: remove that
+# Main entry point
 
-import sys
+if len(sys.argv) != 6:
+    print("Usage: " + sys.argv[0] + " million_file ip2as_file result_file as_report_file net_report_file")
+    exit(-1)
 
 million_file = sys.argv[1]
 ip2as_file = sys.argv[2]
 result_file = sys.argv[3]
 as_file = sys.argv[4]
+net_file = sys.argv[5]
 
 mf = dnslook.load_dns_file(million_file)
 i2a = ip2as.ip2as_table()
@@ -194,5 +317,12 @@ nt.save(result_file)
 al = as_list()
 al.nsas_stats(mf, nt.table)
 
-print("Found " + str(len(al.as_stat)) + " ASes.")
+print("Found " + str(len(al.stats.group_stat)) + " ASes.")
 al.save_in_order(100,as_file)
+
+
+nl = net_list()
+nl.nsnet_stats(mf, nt.table)
+
+print("Found " + str(len(nl.stats.group_stat)) + " Networks.")
+nl.save_in_order(1000,net_file)

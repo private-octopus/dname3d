@@ -35,7 +35,8 @@ def sanitize(object_may_be_string):
         if (cp >= ord('a') and cp <= ord('z')) or \
            (cp >= ord('0') and cp <= ord('9')) or \
            (cp >= ord('A') and cp <= ord('Z')) or \
-           cp == ord('.') or cp == ord('-') or cp == ord('_') : 
+           cp == ord(':') or cp == ord('.') or \
+           cp == ord('-') or cp == ord('_') : 
             safe_str += char 
         elif cp == 9: 
             safe_str += '_'
@@ -74,6 +75,7 @@ class dnslook:
         if len(self.ip) > 0:
             js += ",\"ip\":" + dnslook.to_json_array(self.ip)
         if len(self.ipv6) > 0:
+            # TODO: bug -- "sanitize" will remove the colons!
             js += ",\"ipv6\":" + dnslook.to_json_array(self.ipv6)
         js += ",\"zone\":\"" + self.zone + "\""
         if len(self.ns) > 0:
@@ -212,13 +214,12 @@ class dnslook:
         if len(i2a.table) > 0:
             as_list = set()
             for ip in self.ip:
-                as_number = i2a.get_asn(self.ip[0])
+                as_number = i2a.get_as_number(self.ip[0])
                 if not ip in as_list:
                     as_list.add(as_number)
             self.ases = list(as_list)
         else:
             print("I2A table is empty")
-
 
     def get_domain_data(self, domain, ps, i2a, stats, rank=-1, rng=-1):
         self.domain = domain
