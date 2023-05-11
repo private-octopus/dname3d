@@ -275,6 +275,8 @@ def load_dns_file(dns_json, dot_after=10000):
         if dot_after > 0 and loaded%dot_after == 0:
             sys.stdout.write(".")
             sys.stdout.flush()
+    if dot_after > 0 and loaded%dot_after == 0:
+        print(".")
     return stats
 
 class name_table:
