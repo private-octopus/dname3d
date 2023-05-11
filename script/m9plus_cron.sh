@@ -29,34 +29,59 @@ COM_SAMPLES="/home/huitema/com_samples/com_samples_$YYYYMM.csv"
 COM_STATS="/home/huitema/com_stats/com_stats_$YYYYMM.csv"
 PUB_S="../data/public_suffix_list.dat"
 DUP_S="../data/service-duplicates.csv"
-X=""
-for i in `ls /data/ZFA-backups/$YYYYMM*/com/com.zone`; do
-    if [[ "$i" > "$X" ]]; then
-        X="$i"; 
-    fi; 
-done
-if [ -f $COM_STATS ];
-then
-    echo "COM_STATS already computed";
-else
-    if [ ! -z "$X" ]; then
-        S_TEMP=/home/huitema/tmp_com_zone_
-        rm $S_TEMP*
-        python3 do_zoneparser.py $COM_STATS $X $PUB_S $DUP_S $MILLION $S_TEMP
-    fi
-fi
 
-# TODO: use com samples
-if [ -f $COM_SAMPLES ];
-then
-    echo "$COM_SAMPLES already computed";
+X=""
+
+if [[ ( -f $COM_STATS && -f $COM_SAMPLES ) ]]; then
+    echo "Com samples and stats already computed";
 else
-    if [ ! -z "$X" ]; then
-        echo "Found COM zone file: $X"
-        Z_TEMP=/home/huitema/tmp/tmp_com_sample_
-        rm $Z_TEMP*
-        python3 do_zonesampler.py $COM_SAMPLES $X 1000000 $Z_TEMP
+    XGZ=""
+    for i in `ls /data/ZFA-backups/$YYYYMM*/com/com.zone[.gz]*`; do
+        if [[ "$i" > "$X" ]]; then
+            if [[ "$i" != "$XGZ" ]]; then
+                X="$i";
+                XGZ="$X.gz";
+                if [[ "$X" == *.gz ]]; then
+                  XGZ="$X";
+                fi;
+            fi;
+        fi;
+    done
+    if [[ "$X" == *.gz ]]; then
+        Y="/home/huitema/com_temp/latest_com_zone"
+        gunzip -c $X > $Y
+        X=$Y
     fi
+    echo "X: $X"
+    echo "XGZ: $XGZ"
+    if [ -f $COM_STATS ];
+    then
+        echo "COM_STATS already computed";
+    else
+        if [ ! -z "$X" ]; then
+            S_TEMP=/home/huitema/tmp/tmp_com_zone_
+            rm -f $S_TEMP*
+            python3 do_zoneparser.py $COM_STATS $X $PUB_S $DUP_S $MILLION $S_TEMP
+            rm -f $S_TEMP*
+        fi
+    fi
+
+    # TODO: use com samples
+    if [ -f $COM_SAMPLES ];
+    then
+        echo "$COM_SAMPLES already computed";
+    else
+        if [ ! -z "$X" ]; then
+            echo "Found COM zone file: $X"
+            Z_TEMP=/home/huitema/tmp/tmp_com_sample_
+            rm -f $Z_TEMP*
+            python3 do_zonesampler.py $COM_SAMPLES $X 1000000 $Z_TEMP
+            rm -f $Z_TEMP*
+        fi
+    fi
+
+    # clean up the temporrary files to save disk space
+    rm -f /home/huitema/com_temp/*
 fi
 
 RESULT="/home/huitema/dns_millions/dns_millions_$YYYYMM.csv"
