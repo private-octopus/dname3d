@@ -60,8 +60,11 @@ def main():
     else:
         print("Could not load <" + ip2as_file + ">")
     nt = dnslook.name_table()
-    nt.load(result_file)
-    print("Loaded data for " + str(len(nt.table)) + " NS.")
+    if os.path.exists(result_file):
+        nt.load(result_file)
+        print("Loaded data for " + str(len(nt.table)) + " NS.")
+    else:
+        print("Will create: " + result_file)
 
     out_list = nt.schedule_ns(mf)
     print("Found " + str(len(out_list)) + " names")

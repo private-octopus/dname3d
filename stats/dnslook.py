@@ -253,7 +253,7 @@ class dnslook:
         stats[5] += server_time - cname_time
         stats[6] += asn_time - server_time
 
-def load_dns_file(dns_json):
+def load_dns_file(dns_json, dot_after=10000):
     stats = []
     loaded = 0
     domainsFound = dict()
@@ -272,7 +272,7 @@ def load_dns_file(dns_json):
         except Exception as e:
             traceback.print_exc()
             print("Cannot parse <" + line  + ">\nException: " + str(e))
-        if loaded%500 == 0:
+        if dot_after > 0 and loaded%dot_after == 0:
             sys.stdout.write(".")
             sys.stdout.flush()
     return stats
