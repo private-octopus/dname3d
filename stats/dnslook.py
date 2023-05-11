@@ -276,3 +276,52 @@ def load_dns_file(dns_json):
             sys.stdout.write(".")
             sys.stdout.flush()
     return stats
+
+class name_table:
+    def __init__(self):
+        self.table = dict()
+
+    def add_name(self, domain, i2a):
+        if not domain in self.table:
+            try:
+                d = dnslook()
+                d.domain = domain
+                d.get_a()
+                d.get_aaaa()
+                d.get_asn(i2a)
+                self.table[domain] = d
+            except Exception as e:
+                traceback.print_exc()
+                print("Cannot find addresses of <" + domain  + ">\nException: " + str(e))
+
+    def load(self, file_name, add=True):
+        added = load_dns_file(file_name)
+        if add:
+            for d in added:
+                if not d.domain in self.table:
+                    self.table[d.domain] = d
+        else:
+            self.table=added
+
+    def save(self,file_name):
+        with open(file_name, "wt") as f_out:
+            for domain in self.table:
+                try:
+                    f_out.write(self.table[domain].to_json() + "\n")
+                except Exception as e:
+                    traceback.print_exc()
+                    print("Cannot save addressed for domain <" + target.domain  + ">\nException: " + str(e))
+                    break
+
+    # we expect the addition of new names to run in three steps:
+    # - first, get a list of the "dnslook" objects that have not been found
+    # - split the list and run separate buckets to search the ns names
+    # - then load each of the produced lists back in the table
+    #
+    def schedule_ns(self, dns_list):
+        scheduled = set()
+        for d in dns_list:
+            for ns in d.ns:
+                if not ns in self.table and not ns in scheduled:
+                    scheduled.add(ns)
+        return list(scheduled)
