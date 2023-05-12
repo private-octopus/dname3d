@@ -137,6 +137,8 @@ class group_list:
 class as_list:
     def __init__(self):
         self.stats = group_list()
+        self.nb_skipped = 0
+        self.nb_bad_mr = 0
         
     def compute_as_set(nses, ns_list):
         as_set = set()
@@ -154,9 +156,13 @@ class as_list:
             try:
                 as_set = as_list.compute_as_set(d.ns, ns_list)
                 if len(as_set) == 0:
-                    print("Skip " + d.domain + ", " + str(len(d.ns)) + " NS, " + str(len(as_set)) + " AS.")
+                    self.nb_skipped += 1
+                    if self.nb_skipped <= 5:
+                        print("Skip " + d.domain + ", " + str(len(d.ns)) + " NS, " + str(len(as_set)) + " AS.")
                 elif mr < 0 or mr > 5:
-                    print("Skip " + d.domain + ", bad million range: " + str(mr))
+                    self.bad_mr += 1
+                    if self.bad_mr <= 5:
+                        print("Skip " + d.domain + ", bad million range: " + str(mr))
                 else:
                     self.stats.add_group_set(as_set, mr)
             except Exception as e:
@@ -169,6 +175,8 @@ class as_list:
 class net_list:
     def __init__(self):
         self.stats = group_list()
+        self.nb_skipped = 0
+        self.nb_bad_mr = 0
 
     def compute_net_set(nses, ns_list):
         net_set = set()
@@ -195,9 +203,13 @@ class net_list:
             try:
                 net_set = net_list.compute_net_set(d.ns, ns_list)
                 if len(net_set) == 0:
-                    print("Skip " + d.domain + ", " + str(len(d.ns)) + " NS, no IP address")
+                    self.nb_skipped += 1
+                    if self.nb_skipped <= 5:
+                        print("Skip " + d.domain + ", " + str(len(d.ns)) + " NS, no IP address")
                 elif mr < 0 or mr > 5:
-                    print("Skip " + d.domain + ", bad million range: " + str(mr))
+                    self.bad_mr += 1
+                    if self.bad_mr <= 5:
+                        print("Skip " + d.domain + ", bad million range: " + str(mr))
                 else:
                     self.stats.add_group_set(net_set, mr)
             except Exception as e:
@@ -227,10 +239,18 @@ al = as_list()
 al.nsas_stats(mf, nt.table)
 
 print("Found " + str(len(al.stats.group_stat)) + " ASes.")
+if al.nb_skipped > 0:
+    print("Skipped " + str(al.nb_skipped) + " domains with 0 AS data.")
+if al.nb_bad_mr > 0:
+    print("Skipped " + str(al.nb_bad_mr) + " domains with bad million rank.")
 al.save_in_order(100,as_file)
 
 nl = net_list()
 nl.nsnet_stats(mf, nt.table)
 
 print("Found " + str(len(nl.stats.group_stat)) + " Networks.")
+if nl.nb_skipped > 0:
+    print("Skipped " + str(nl.nb_skipped) + " domains with 0 addresses.")
+if nl.nb_bad_mr > 0:
+    print("Skipped " + str(nl.nb_bad_mr) + " domains with bad million rank.")
 nl.save_in_order(1000,net_file)
