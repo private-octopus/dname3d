@@ -116,7 +116,7 @@ class ip_tab_line:
                     asn = sub_tab.find_asn(subnet)
                     break
         except Exception as e:
-            print("Cannot access subnet " + str(subtab.net) + ", exception:" + str(e))
+            print("Cannot access subnet " + str(sub_tab.net) + ", exception:" + str(e))
         return asn
 
     def add_ranges(self, ranges):
