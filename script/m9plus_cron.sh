@@ -18,7 +18,7 @@ then
     echo "$IP2AS already downloaded";
 else
     echo "Need to download $IP2AS"
-    python3 geti2as.py $IP2AS /home/huitema/temp
+    /usr/local/python3.8/bin/python3 geti2as.py $IP2AS /home/huitema/temp
 fi
 
 exit
