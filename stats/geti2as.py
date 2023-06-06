@@ -211,7 +211,7 @@ class bgp_tab_parser:
 
 target_v4 = sys.argv[1]
 temp = sys.argv[2]
-old_table = sys.argv[3]
+#old_table = sys.argv[3]
 
 parser = bgp_tab_parser()
 
@@ -234,11 +234,11 @@ if verified:
     ranges = ip2as.ip2as_table()
     a_last = parser.v4_tab.add_ranges(ranges)
     print("Found " + str(len(ranges.table)) + " ranges, end with " + str(a_last) + ", " + str(ranges.nb_zero()) + " zeroes.")
-    old_ranges = ip2as.ip2as_table()
-    old_ranges.load(old_table)
-    print("Found " + str(len(old_ranges.table)) + " in old_table, " + str(old_ranges.nb_zero()) + " zeroes.")
-    ranges.merge(old_ranges)
-    print("After merge, " + str(len(ranges.table)) + " ranges, " + str(ranges.nb_zero()) + " zeroes.")
+    #old_ranges = ip2as.ip2as_table()
+    #old_ranges.load(old_table)
+    #print("Found " + str(len(old_ranges.table)) + " in old_table, " + str(old_ranges.nb_zero()) + " zeroes.")
+    #ranges.merge(old_ranges)
+    #print("After merge, " + str(len(ranges.table)) + " ranges, " + str(ranges.nb_zero()) + " zeroes.")
     ranges.collapse()
     print("Kept " + str(len(ranges.table)) + " ranges after collapse, " + str(ranges.nb_zero()) + " zeroes.")
     if ranges.save(target_v4):
