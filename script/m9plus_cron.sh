@@ -12,6 +12,17 @@ OLD_DIR=`pwd`
 cd /home/huitema/dname3d/stats
 echo "Switched from $OLD_DIR to `pwd`"
 
+IP2AS="/home/huitema/ip2as/ip2as_$YEAR$MM.csv"
+if [ -f $IP2AS ];
+then
+    echo "$IP2AS already downloaded";
+else
+    echo "Need to download $IP2AS"
+    python3 geti2as.py $IP2AS /home/huitema/temp
+fi
+
+exit
+
 MILLION="/home/huitema/majestic/million_$YEAR$MM.txt"
 if [ -f $MILLION ];
 then
@@ -21,9 +32,6 @@ else
     python3 getmajestic.py $MILLION
 fi
 
-#
-# TODO locate com zone required for parsing or sampling
-#
 
 COM_SAMPLES="/home/huitema/com_samples/com_samples_$YYYYMM.csv"
 COM_STATS="/home/huitema/com_stats/com_stats_$YYYYMM.csv"
@@ -89,11 +97,9 @@ if [ -f $COM_SAMPLES -a -f $MILLION ];
 then
 echo "Adding $NBSAMPLES to the DNS processed list"
     #../script/central_million.sh $YYYYMM $NBSAMPLES
-    # TODO: IP2AS should be dynamic, monthly download.
-    ip2as=../data/ip2as.csv
     TEMP=/home/huitema/tmp/dnslookup_
     rm $TEMP*
-    /usr/local/python3.8/bin/python3 do_dnslookup.py $NBSAMPLES $ip2as $PUB_S $MILLION $COM_SAMPLES $RESULT $TEMP
+    /usr/local/python3.8/bin/python3 do_dnslookup.py $NBSAMPLES $IP2AS $PUB_S $MILLION $COM_SAMPLES $RESULT $TEMP
 fi
 
 if [ -f $RESULT ]
