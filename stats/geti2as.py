@@ -110,10 +110,13 @@ class ip_tab_line:
         #
         # TODO: replace linear search by binary
         #
-        for sub_tab in self.overlap:
-            if subnet.subnet_of(sub_tab.net):
-                asn = sub_tab.find_asn(subnet)
-                break
+        try:
+            for sub_tab in self.overlap:
+                if subnet.subnet_of(sub_tab.net):
+                    asn = sub_tab.find_asn(subnet)
+                    break
+        except Exception as e:
+            print("Cannot access subnet " + str(subtab.net) + ", exception:" + str(e))
         return asn
 
     def add_ranges(self, ranges):
