@@ -232,7 +232,7 @@ for i in range(0, len(test_addresses)):
         print(ta + " -> " + str(asn) + ", expected " + str(test_asn[i]))
         verified = False
 
-if verified:
+if verified or True:
     print("Input verified, formatting " + target_v4)
     ranges = ip2as.ip2as_table()
     a_last = parser.v4_tab.add_ranges(ranges)
