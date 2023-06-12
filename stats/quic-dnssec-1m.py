@@ -50,4 +50,4 @@ with open(tls_csv,"wt") as F:
     f.write("Tld, NbSld, NbDNSSEC\n")
     tls_2ld, tls_dnssec = load_dnsjson(dns_json)
     for tld in tls_2ld:
-        F.write(tld + str(100*tls_dnssec[tld]/tls_2ld[tld])"%," + str(tls_2ld[tld]) + "," + str(tls_dnssec[tld]) + "\n")
+        F.write(tld + str(100*tls_dnssec[tld]/tls_2ld[tld]) + "%," + str(tls_2ld[tld]) + "," + str(tls_dnssec[tld]) + "\n")
