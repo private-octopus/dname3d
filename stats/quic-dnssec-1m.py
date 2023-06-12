@@ -40,7 +40,7 @@ def load_dnsjson(dns_json):
         if (total%5000) == 0:
             sys.stdout.write(".")
             sys.stdout.flush()
-    print("\nFound " + str(ltotal) + " domains.")
+    print("\nFound " + str(total) + " domains.")
     return tls_2ld, tls_dnssec
 
 
