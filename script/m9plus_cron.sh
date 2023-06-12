@@ -27,7 +27,7 @@ then
     echo "$MILLION already downloaded";
 else
     echo "Need to download $MILLION"
-    python3 getmajestic.py $MILLION
+    /usr/local/python3.8/bin/python3 getmajestic.py $MILLION
 fi
 
 
@@ -67,7 +67,7 @@ else
         if [ ! -z "$X" ]; then
             S_TEMP=/home/huitema/tmp/tmp_com_zone_
             rm -f $S_TEMP*
-            python3 do_zoneparser.py $COM_STATS $X $PUB_S $DUP_S $MILLION $S_TEMP
+            /usr/local/python3.8/bin/python3 do_zoneparser.py $COM_STATS $X $PUB_S $DUP_S $MILLION $S_TEMP
             rm -f $S_TEMP*
         fi
     fi
@@ -81,7 +81,7 @@ else
             echo "Found COM zone file: $X"
             Z_TEMP=/home/huitema/tmp/tmp_com_sample_
             rm -f $Z_TEMP*
-            python3 do_zonesampler.py $COM_SAMPLES $X 1000000 $Z_TEMP
+            /usr/local/python3.8/bin/python3 do_zonesampler.py $COM_SAMPLES $X 1000000 $Z_TEMP
             rm -f $Z_TEMP*
         fi
     fi
