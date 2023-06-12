@@ -47,7 +47,7 @@ def load_dnsjson(dns_json):
 dns_json = sys.argv[1]
 tld_csv = sys.argv[2]
 with open(tld_csv,"wt") as F:
-    f.write("Tld, NbSld, NbDNSSEC\n")
+    F.write("Tld, NbSld, NbDNSSEC\n")
     tls_2ld, tls_dnssec = load_dnsjson(dns_json)
     for tld in tls_2ld:
         F.write(tld + str(100*tls_dnssec[tld]/tls_2ld[tld]) + "%," + str(tls_2ld[tld]) + "," + str(tls_dnssec[tld]) + "\n")
