@@ -41,13 +41,13 @@ def load_dnsjson(dns_json):
             sys.stdout.write(".")
             sys.stdout.flush()
     print("\nFound " + str(total) + " domains.")
-    return tls_2ld, tls_dnssec
+    return tld_2ld, tld_dnssec
 
 
 dns_json = sys.argv[1]
 tld_csv = sys.argv[2]
 with open(tld_csv,"wt") as F:
     F.write("Tld, NbSld, NbDNSSEC\n")
-    tls_2ld, tls_dnssec = load_dnsjson(dns_json)
-    for tld in tls_2ld:
-        F.write(tld + str(100*tls_dnssec[tld]/tls_2ld[tld]) + "%," + str(tls_2ld[tld]) + "," + str(tls_dnssec[tld]) + "\n")
+    tld_2ld, tld_dnssec = load_dnsjson(dns_json)
+    for tld in tld_2ld:
+        F.write(tld + str(100*tld_dnssec[tld]/tld_2ld[tld]) + "%," + str(tld_2ld[tld]) + "," + str(tld_dnssec[tld]) + "\n")
