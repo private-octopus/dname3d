@@ -112,13 +112,18 @@ class ip2as_line:
         ret = True
         st = s.strip()
         parts = st.split(",")
+        is_first = True
         try:
             self.ip_first = ipaddress.ip_address(parts[0].strip())
             self.ip_last = ipaddress.ip_address(parts[1].strip())
             self.as_number = int(parts[2].strip())
         except Exception as e:
-            traceback.print_exc()
-            print("For <" + st + ">: " + str(e))
+            if is_first:
+                # silently skip header  line of table
+                is_first = False
+            else:
+                traceback.print_exc()
+                print("For <" + st + ">: " + str(e))
             ret = False
         return(ret)
 
