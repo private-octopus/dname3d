@@ -14,6 +14,7 @@ import dnslook
 import json
 import pubsuffix
 import zoneparser
+import tld_table
 import os
 import urllib.request, urllib.error, urllib.parse
 import traceback
@@ -198,6 +199,8 @@ class m11_computer:
         # and parsing it.
         if not os.path.isfile(root_file):
             try:
+                tlds = tld_table.tld_table()
+                tlds.load_from_web()
                 url = 'https://www.internic.net/domain/root.zone'
                 response = urllib.request.urlopen(url)
                 root_data = response.read().decode('UTF-8')
@@ -246,10 +249,9 @@ class m11_computer:
                     if len(tld) == 2:
                         nb_cctld += 1
                         m11_computer.add_algo_list_to_dict(self.cctld_algos, all_tlds[tld])
-                    else:
+                    elif tld in tlds.tld_list and tlds.tld_list[tld].category == 'gTLD':
                         nb_gtld += 1
                         m11_computer.add_algo_list_to_dict(self.gtld_algos, all_tlds[tld])
-                    algo_list = all_tlds[tld]
                 # then normalize the weights based on numbers of tlds
                 m11_computer.normalize_dict(self.cctld_algos,nb_cctld)
                 m11_computer.normalize_dict(self.gtld_algos,nb_gtld)
