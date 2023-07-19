@@ -34,6 +34,8 @@ class m11_provider_stat:
         self.sort_weight = 0
         self.count_10k = 0
         self.dnssec_10k = 0
+        self.count_1M = 0
+        self.dnssec_1M = 0
         self.count = []
         self.dnssec = []
         self.ratio = []
@@ -64,6 +66,13 @@ class m11_provider_stat:
         for i in range(0,3):
             self.dnssec_10k += self.dnssec[i]
             self.count_10k += self.count[i]
+    
+    def compute_1M(self):
+        self.count_1M = 0.0
+        self.dnssec_1M = 0.0
+        for i in range(0,5):
+            self.dnssec_1M += self.dnssec[i]
+            self.count_1M += self.count[i]
 
 class m11_providers_stat:
     def __init__(self):
@@ -112,8 +121,26 @@ class m11_providers_stat:
             s_list = s_list[:n]
             s_list.append(other)
         return s_list
+        
+    def top_list_1M(self, n, min_count):
+        for ns_suffix in self.p_list:
+            self.p_list[ns_suffix].compute_1M()
+        s_list = sorted(self.p_list.values(), key=lambda x: x.count_1M, reverse=True)
+        qualified_number = 0
+        for s_data in s_list:
+            if s_data.count_1M >= min_count:
+                qualified_number += 1
+        if n > qualified_number:
+            n = qualified_number
+        if len(s_list) > n:
+            other = m11_provider_stat("others")
+            for s_data in s_list[n:]:
+                other.count_1M += s_data.count_1M
+                other.dnssec_1M += s_data.dnssec_1M
+            s_list = s_list[:n]
+            s_list.append(other)
+        return s_list
 
-    
     def top_list_cat_n(self, cat_n, n, min_count):
         s_list = sorted(self.p_list.values(), key=lambda x: x.count[cat_n], reverse=True)
         qualified_number = 0
@@ -168,6 +195,25 @@ class m11_providers_stat:
             dnssec_ratio = 0
             if v.count_10k > 0:
                 dnssec_ratio = v.dnssec_10k/v.count_10k
+            F.write(metric_id + ".2," + metric_date + ",v2.0," + v.ns_suffix + "," + str(dnssec_ratio) + "\n")
+
+    def save_metric_1M(self, n, min_count, metric_id, metric_date, F):
+        l =  self.top_list_1M(n, min_count)
+        total_count = 0
+        total_dnssec = 0
+        for v in l:
+            total_count += v.count_1M
+            total_dnssec += v.dnssec_1M
+        print("Found " + str(len(l)) + " entries for " + metric_id + ", count: " + str(total_count) + ", " + str(total_dnssec) + ", " + str(total_dnssec/total_count))
+        if total_count <= 0:
+            return
+        for v in l:
+            count_ratio = v.count_1M/total_count
+            F.write(metric_id + ".1," + metric_date + ",v2.0," + v.ns_suffix + "," + str(count_ratio) + "\n")
+        for v in l:
+            dnssec_ratio = 0
+            if v.count_1M > 0:
+                dnssec_ratio = v.dnssec_1M/v.count_1M
             F.write(metric_id + ".2," + metric_date + ",v2.0," + v.ns_suffix + "," + str(dnssec_ratio) + "\n")
 
     def save_metric_cat_n(self, cat_n, n, min_count, metric_id, metric_date, F):
@@ -411,6 +457,12 @@ class m11_computer:
             # Metric 11.14 is about the DNSSEC penetration and relative share of
             # the top TLDs with at least 10 samples in the top 10K domains
             self.tld_stats.save_metric_cat_n(4, 200, 10, "M11.14", m11_date, F)
+            # Metric 11.15 is about the DNSSEC penetration and relative share of
+            # the top 20 DNS providers in the top 1M domains
+            self.suffix_stats.save_metric_1M(20, 10, "M11.15", m11_date, F)
+            # Metric 11.16 is about the DNSSEC penetration and relative share of
+            # the top TLDs with at least 10 samples in the top 10K domains
+            self.tld_stats.save_metric_1M(200, 10, "M11.16", m11_date, F)
 
 # main
 
