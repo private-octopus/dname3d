@@ -446,23 +446,23 @@ class m11_computer:
             # the top TLDs with at least 10 samples in the top 10K domains
             self.tld_stats.save_metric_10k(200, 10, "M11.10", m11_date, F)
             # Metric 11.11 is about the DNSSEC penetration and relative share of
-            # the top 20 DNS providers in the top 100K domains
-            self.suffix_stats.save_metric_cat_n(3, 20, 10, "M11.11", m11_date, F)
+            # the top 20 DNS providers in the top 90-100K domains
+            self.suffix_stats.save_metric_cat_n(3, 20, 90, "M11.11", m11_date, F)
             # Metric 11.12 is about the DNSSEC penetration and relative share of
-            # the top TLDs with at least 10 samples in the top 10K domains
-            self.tld_stats.save_metric_cat_n(3, 200, 10, "M11.12", m11_date, F)
+            # the top TLDs with at least 90 samples in the top 90-100K domains
+            self.tld_stats.save_metric_cat_n(3, 200, 90, "M11.12", m11_date, F)
             # Metric 11.13 is about the DNSSEC penetration and relative share of
-            # the top 20 DNS providers in the top 100K domains
-            self.suffix_stats.save_metric_cat_n(4, 20, 10, "M11.13", m11_date, F)
+            # the top 20 DNS providers in the top 900K-1M domains
+            self.suffix_stats.save_metric_cat_n(4, 20, 900, "M11.13", m11_date, F)
             # Metric 11.14 is about the DNSSEC penetration and relative share of
-            # the top TLDs with at least 10 samples in the top 10K domains
-            self.tld_stats.save_metric_cat_n(4, 200, 10, "M11.14", m11_date, F)
+            # the top TLDs with at least 900 samples in the top 100K-1M domains
+            self.tld_stats.save_metric_cat_n(4, 200, 900, "M11.14", m11_date, F)
             # Metric 11.15 is about the DNSSEC penetration and relative share of
             # the top 20 DNS providers in the top 1M domains
-            self.suffix_stats.save_metric_1M(20, 10, "M11.15", m11_date, F)
+            self.suffix_stats.save_metric_1M(20, 1000, "M11.15", m11_date, F)
             # Metric 11.16 is about the DNSSEC penetration and relative share of
-            # the top TLDs with at least 10 samples in the top 10K domains
-            self.tld_stats.save_metric_1M(200, 10, "M11.16", m11_date, F)
+            # the top TLDs with at least 10 samples in the top 1M domains
+            self.tld_stats.save_metric_1M(200, 1000, "M11.16", m11_date, F)
 
 # main
 
