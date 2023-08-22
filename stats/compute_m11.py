@@ -231,8 +231,8 @@ class m11_providers_stat:
             F.write(metric_id + ".1," + metric_date + ",v2.0," + v.ns_suffix + "," + str(count_ratio) + "\n")
         for v in l:
             dnssec_ratio = 0
-            if v.count_10k > 0:
-                dnssec_ratio = v.dnssec_10k/v.count_10k
+            if v.count[cat_n] > 0:
+                dnssec_ratio = v.dnssec[cat_n]/v.count[cat_n]
             F.write(metric_id + ".2," + metric_date + ",v2.0," + v.ns_suffix + "," + str(dnssec_ratio) + "\n")
 
 class m11_computer:
