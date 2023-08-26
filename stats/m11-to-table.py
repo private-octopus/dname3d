@@ -53,6 +53,13 @@ class m11_domain_line:
         self.share[rank] = share
     def add_dnssec(self, rank, dnssec):
         self.dnssec[rank] = dnssec
+
+    def write_to_file(self, F):
+        F.write(self.name)
+        for rank in range(0,4):
+            F.write(',' + str(self.share[rank]) + ',' + str(self.dnssec[rank]))
+        F.write('\n')
+
         
 def add_to_m11_domain(table, name, is_share, rank, f_value):
     if not name in table:
@@ -89,11 +96,16 @@ def m11_domains_write(f_name, table, table_name):
             F.write(', dnssec-' + r)
         F.write('\n')
 
+        has_others = False
+
         for name in table:
-            F.write(name)
-            for rank in range(0,4):
-                F.write(',' + str(table[name].share[rank]) + ',' + str(table[name].dnssec[rank]))
-            F.write('\n')
+            if name == 'others':
+                has_others = True
+            else:
+                table[name].write_to_file(F)
+
+        if has_others:
+            table['others'].write_to_file(F)
 
 
 file_in = sys.argv[1]
@@ -103,7 +115,7 @@ tld_out = sys.argv[3]
 tables = m11_tables()
 
 skipped_metric = ""
-first_not_skipped = False
+first_skipped = False
 nb_reports = 0
 ln = 0
 for line in open(file_in, 'rt'):
@@ -112,14 +124,14 @@ for line in open(file_in, 'rt'):
     if len(parts) != 5:
         print("Cannot parse line " + str(ln) + ": " + line.strip())
     elif not tables.add(parts[0].strip(), parts[3].strip(), parts[4].strip()):
-        if nb_reports < 10 and skipped_metric != parts[0]:
+        if first_skipped and nb_reports < 10 and skipped_metric != parts[0]:
             print("Skipped line " + str(ln) + ":" + line.strip())
             is_parsed, is_provider, is_share, rank = parse_m11_metric(parts[0])
             print(str(is_parsed) + ", " + str(is_provider) + ", " + str(is_share) + ", " + str(rank))
             skipped_metric = parts[0]
             nb_reports += 1
-    elif not first_not_skipped:
-        first_not_skipped = True
+    elif not first_skipped:
+        first_skipped = True
         nb_reports = 0
 m11_domains_write(provider_out, tables.provider, 'provider')
 m11_domains_write(tld_out, tables.tld, 'tld')
