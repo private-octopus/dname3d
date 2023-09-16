@@ -20,7 +20,7 @@ class asn_or_net:
 
 
 def add_to_asn_or_net(n_dict, name, weight, million_range):
-    if million_range > 0 and million_range < 6:
+    if million_range >= 0 and million_range < 6:
         if not name in n_dict:
             n_dict[name] = asn_or_net(name)
         n_dict[name].w[million_range] += weight
