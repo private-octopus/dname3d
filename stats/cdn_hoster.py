@@ -19,17 +19,17 @@ class asn_or_net:
         self.w = [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ]
 
 
-def add_to_asn_or_net(n_dict, name, weigth, million_range):
+def add_to_asn_or_net(n_dict, name, weight, million_range):
     if million_range > 0 and million_range < 6:
-        if not name in dict:
+        if not name in n_dict:
             n_dict[name] = asn_or_net(name)
         n_dict[name].w[million_range] += weight
 
 def add_list_of_asn_or_net(n_dict, n_list, million_range):
     if len(n_list) > 0:
-        weigth = 1.0/len(n_list)
+        weight = 1.0/len(n_list)
         for name in n_list:
-            add_to_asn_or_net(n_dist, name, weight, million_range)
+            add_to_asn_or_net(n_dict, name, weight, million_range)
 
 def add_list_of_nets(net_dict, ip_list, ip_v6_list, million_range):
     n_list = set()
@@ -40,7 +40,7 @@ def add_list_of_nets(net_dict, ip_list, ip_v6_list, million_range):
             n_list.add(net24)
         except:
             print("Cannot parse IPv4 = " + ip)
-    for ip6 in ip_list:
+    for ip6 in ip_v6_list:
         try:
             prf6 = ipaddress.IPv6Network(ip6 + "/48", strict=False)
             net48 = str(prf6)
