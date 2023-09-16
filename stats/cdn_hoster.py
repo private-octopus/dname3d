@@ -83,5 +83,3 @@ for dnslook_entry in mf:
     add_dnslook_entry(net_list, asn_list, dnslook_entry)
 write_list(net_list, 0.001, "network", net_file)
 write_list(asn_list, 0.001, "asn", asn_file)
-
-
