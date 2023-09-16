@@ -55,7 +55,7 @@ def add_dnslook_entry(net_dict, asn_dict, dnslook_entry):
 
 def write_list(n_dict, threshold, head_name, file_name):
     with open(file_name, "wt") as F:
-        F.write(head_name + ", range, weight, share")
+        F.write(head_name + ", range, weight, share,\n")
         for million_range in range(0,6):
             w_cat = 0
             for name in n_dict:
@@ -65,7 +65,7 @@ def write_list(n_dict, threshold, head_name, file_name):
                 other_weight = 0.0
                 for name in n_dict:
                     if n_dict[name].w[million_range] > high_threshold:
-                        F.write(name + "," + str(million_range) + "," + str(n_dict[name].w[million_range]) + "," + str(n_dict[name].w[million_range]/w_cat))
+                        F.write(name + "," + str(million_range) + "," + str(n_dict[name].w[million_range]) + "," + str(n_dict[name].w[million_range]/w_cat) + ",\n")
 
 # Main entry point
 if len(sys.argv) != 4 :
