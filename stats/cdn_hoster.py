@@ -16,7 +16,7 @@ import ipaddress
 class asn_or_net:
     def __init__(self, name):
         self.name = name
-        self.w = [ 0.0, 0.0., 0.0, 0.0, 0.0., 0.0 ]
+        self.w = [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ]
 
 
 def add_to_asn_or_net(n_dict, name, weigth, category):
@@ -50,7 +50,7 @@ def add_list_of_nets(net_dict, ip_list, ip_v6_list, category):
     add_list_of_asn_or_net(net_dict, n_list, category)
 
 def add_dnslook_entry(net_dict, asn_dict, dnslook_entry):
-    add_list_of_nets(net_dict, dnslook_entry.ip, dnslook_entry.ip_v6, dnslook_entry.category)
+    add_list_of_nets(net_dict, dnslook_entry.ip, dnslook_entry.ipv6, dnslook_entry.category)
     add_list_of_asn_or_net(asn_dict, dnslook_entry.ases, dnslook_entry.category)
 
 def write_list(n_dict, threshold, head_name, file_name):
@@ -63,14 +63,12 @@ def write_list(n_dict, threshold, head_name, file_name):
             if w_cat > 0:
                 high_threshold = threshold*w_cat
                 other_weight = 0.0
-                    for name in n_dict:
-                        if n_dict[name].w[category] > high_threshold:
-                            F.write(name + "," + str(category) + "," + str(n_dict[name].w[category]) + "," + str(n_dict[name].w[category]/w_cat)
-
-
+                for name in n_dict:
+                    if n_dict[name].w[category] > high_threshold:
+                        F.write(name + "," + str(category) + "," + str(n_dict[name].w[category]) + "," + str(n_dict[name].w[category]/w_cat))
 
 # Main entry point
-if len(sys.argv) < 4 or len(sys.argv) > 4:
+if len(sys.argv) != 4 :
     print("Usage: " + sys.argv[0] + " million_file net_file asn_file")
     exit(-1)
 
@@ -82,7 +80,7 @@ mf = dnslook.load_dns_file(million_file)
 net_list = dict()
 asn_list = dict()
 for dnslook_entry in mf:
-    add_dnslook_entry(net_dict, asn_dict, dnslook_entry)
+    add_dnslook_entry(net_list, asn_list, dnslook_entry)
 write_list(net_list, 0.001, "network", net_file)
 write_list(net_list, 0.001, "asn", net_file)
 
