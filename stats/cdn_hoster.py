@@ -19,19 +19,19 @@ class asn_or_net:
         self.w = [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ]
 
 
-def add_to_asn_or_net(n_dict, name, weigth, category):
-    if category > 0 and category < 6:
+def add_to_asn_or_net(n_dict, name, weigth, million_range):
+    if million_range > 0 and million_range < 6:
         if not name in dict:
             n_dict[name] = asn_or_net(name)
-        n_dict[name].w[category] += weight
+        n_dict[name].w[million_range] += weight
 
-def add_list_of_asn_or_net(n_dict, n_list, category):
+def add_list_of_asn_or_net(n_dict, n_list, million_range):
     if len(n_list) > 0:
         weigth = 1.0/len(n_list)
         for name in n_list:
-            add_to_asn_or_net(n_dist, name, weight, category)
+            add_to_asn_or_net(n_dist, name, weight, million_range)
 
-def add_list_of_nets(net_dict, ip_list, ip_v6_list, category):
+def add_list_of_nets(net_dict, ip_list, ip_v6_list, million_range):
     n_list = set()
     for ip in ip_list:
         try:
@@ -47,25 +47,25 @@ def add_list_of_nets(net_dict, ip_list, ip_v6_list, category):
             n_list.add(net48)
         except:
             print("Cannot parse IPv6 = " + ip6)
-    add_list_of_asn_or_net(net_dict, n_list, category)
+    add_list_of_asn_or_net(net_dict, n_list, million_range)
 
 def add_dnslook_entry(net_dict, asn_dict, dnslook_entry):
-    add_list_of_nets(net_dict, dnslook_entry.ip, dnslook_entry.ipv6, dnslook_entry.category)
-    add_list_of_asn_or_net(asn_dict, dnslook_entry.ases, dnslook_entry.category)
+    add_list_of_nets(net_dict, dnslook_entry.ip, dnslook_entry.ipv6, dnslook_entry.million_range)
+    add_list_of_asn_or_net(asn_dict, dnslook_entry.ases, dnslook_entry.million_range)
 
 def write_list(n_dict, threshold, head_name, file_name):
     with open(file_name, "wt") as F:
-        F.write(head_name + ", category, weight, share")
-        for category in range(0,6):
+        F.write(head_name + ", range, weight, share")
+        for million_range in range(0,6):
             w_cat = 0
             for name in n_dict:
-                w_cat += n_dict[name].w[category]
+                w_cat += n_dict[name].w[million_range]
             if w_cat > 0:
                 high_threshold = threshold*w_cat
                 other_weight = 0.0
                 for name in n_dict:
-                    if n_dict[name].w[category] > high_threshold:
-                        F.write(name + "," + str(category) + "," + str(n_dict[name].w[category]) + "," + str(n_dict[name].w[category]/w_cat))
+                    if n_dict[name].w[million_range] > high_threshold:
+                        F.write(name + "," + str(million_range) + "," + str(n_dict[name].w[million_range]) + "," + str(n_dict[name].w[million_range]/w_cat))
 
 # Main entry point
 if len(sys.argv) != 4 :
