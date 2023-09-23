@@ -28,20 +28,17 @@ import pubsuffix
 
 # Basic tests
 
-if len(sys.argv) < 4:
-    print("Usage: " + sys.argv[0] + "ip2as.csv pub_suffixes domain-name*")
+if len(sys.argv) < 5:
+    print("Usage: " + sys.argv[0] + "ip2as.csv ip2as6.csv pub_suffixes domain-name*")
     exit(1)
 
 ip2as_file = sys.argv[1]
-public_suffix_file = sys.argv[2]
-domains = sys.argv[3:]
+ip2as6_file = sys.argv[2]
+public_suffix_file = sys.argv[3]
+domains = sys.argv[4:]
 
-i2a = ip2as.ip2as_table()
-
-if i2a.load(ip2as_file):
-    print("Loaded ip2as table of length: " + str(len(i2a.table)))
-else:
-    print("Could not load \"" + ip2as_file + "\"")
+i2a = ip2as.load_ip2as(ip2as_file)
+i2a6 = ip2as.load_ip2as(ip2as6_file)
 
 ps = pubsuffix.public_suffix()
 
@@ -55,9 +52,16 @@ for x in range(0,7):
 v = dnslook.dnslook()
 
 for domain in domains:
-    v.get_domain_data(domain, ps, i2a, stats, rank=7)
+    v.get_domain_data(domain, ps, i2a, i2a6, stats, rank=7)
     js = v.to_json()
     print(js)
+    for ipv4 in v.ip:
+        print(ipv4)
+        as_number = i2a.get_as_number(ipv4)
+        print(ipv4 + " -> AS" + str(as_number))
+    for ipv6 in v.ipv6:
+        as_number = i2a6.get_as_number(ipv6)
+        print(ipv6 + " -> AS" + str(as_number))
     w = dnslook.dnslook()
     if w.from_json(js):
         js2 = w.to_json()

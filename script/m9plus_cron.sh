@@ -13,12 +13,13 @@ cd /home/huitema/dname3d/stats
 echo "Switched from $OLD_DIR to `pwd`"
 
 IP2AS="/home/huitema/ip2as/ip2as_$YEAR$MM.csv"
-if [ -f $IP2AS ];
+IP2AS6="/home/huitema/ip2as/ip2as6_$YEAR$MM.csv"
+if [ -f $IP2AS -a -f $IP2AS6 ];
 then
     echo "$IP2AS already downloaded";
 else
-    echo "Need to download $IP2AS"
-    /usr/local/python3.8/bin/python3 geti2as.py $IP2AS /home/huitema/temp/
+    echo "Need to download $IP2AS or $IP2AS6"
+    /usr/local/python3.8/bin/python3 geti2as.py $IP2AS $IP2AS6 /home/huitema/temp/
 fi
 
 MILLION="/home/huitema/majestic/million_$YEAR$MM.txt"

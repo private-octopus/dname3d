@@ -210,18 +210,23 @@ class dnslook:
         elif test:
             print("Empty table.")
 
-    def get_asn(self, i2a):
-        if len(i2a.table) > 0:
-            as_list = set()
-            for ip in self.ip:
-                as_number = i2a.get_as_number(self.ip[0])
-                if not ip in as_list:
-                    as_list.add(as_number)
-            self.ases = list(as_list)
+    def get_asn(self, i2a, i2a6):
+        as_list = set()
+        if len(i2a.table) > 0 and len(i2a6.table) > 0:
+            for ipv4 in self.ip:
+                print(ipv4)
+                as_number = i2a.get_as_number(ipv4)
+                as_list.add(as_number)
+            for ipv6 in self.ipv6:
+                as_number = i2a6.get_as_number(ipv6)
+                as_list.add(as_number)
+            self.ases = []
+            for asn in as_list:
+                self.ases.append(asn)
         else:
-            print("I2A table is empty")
+            print("I2A or I2A6 table is empty")
 
-    def get_domain_data(self, domain, ps, i2a, stats, rank=-1, rng=-1):
+    def get_domain_data(self, domain, ps, i2a, i2a6, stats, rank=-1, rng=-1):
         self.domain = domain
         if rank >= 0:
             self.million_rank = rank
@@ -243,7 +248,7 @@ class dnslook:
         cname_time = time.time()
         self.get_server(ps)
         server_time = time.time()
-        self.get_asn(i2a)
+        self.get_asn(i2a, i2a6)
         asn_time = time.time()
         stats[0] += a_time - start_time
         stats[1] += aaaa_time - a_time

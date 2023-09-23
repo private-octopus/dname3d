@@ -136,15 +136,15 @@ class ip2as_table:
         ret = True
         try:
             first = True
-            if self.ip_version == 4:
-                il = ip2as_line(ipaddress.ip_address("0.0.0.0"), ipaddress.ip_address("0.0.0.0"), 0)
-            else:
-                il = ip2as_line(ipaddress.ip_address("::0"), ipaddress.ip_address("::0"), 0)
             for line in open(file_name, "rt"):
                 l = line.strip()
                 if first and l == "ip_first, ip_last, as_number,":
                     first = False
                     continue
+                if self.ip_version == 4:
+                    il = ip2as_line(ipaddress.ip_address("0.0.0.0"), ipaddress.ip_address("0.0.0.0"), 0)
+                else:
+                    il = ip2as_line(ipaddress.ip_address("::0"), ipaddress.ip_address("::0"), 0)
                 if il.load(l):
                     self.table.append(il)
         except Exception as e:
@@ -292,3 +292,12 @@ class asname:
         if asn in self.table:
             n = self.table[asn]
         return n
+
+def load_ip2as(ip2as_file):
+    i2a = ip2as_table()
+    if i2a.load(ip2as_file):
+        print("From <" + ip2as_file + ">, loaded table of length: " + str(len(i2a.table)))
+    else:
+        print("Could not load <" + ip2as_file + ">")
+        exit(1)
+    return i2a
