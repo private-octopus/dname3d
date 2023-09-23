@@ -128,19 +128,23 @@ class ip2as_line:
         return(ret)
 
 class ip2as_table:
-    def __init__(self):
+    def __init__(self, ipv=4):
         self.table = []
+        self.ip_version = ipv
 
     def load(self,file_name):
         ret = True
         try:
             first = True
+            if self.ip_version == 4:
+                il = ip2as_line(ipaddress.ip_address("0.0.0.0"), ipaddress.ip_address("0.0.0.0"), 0)
+            else:
+                il = ip2as_line(ipaddress.ip_address("::0"), ipaddress.ip_address("::0"), 0)
             for line in open(file_name, "rt"):
                 l = line.strip()
                 if first and l == "ip_first, ip_last, as_number,":
                     first = False
                     continue
-                il = ip2as_line(ipaddress.ip_address("0.0.0.0"), ipaddress.ip_address("0.0.0.0"), 0)
                 if il.load(l):
                     self.table.append(il)
         except Exception as e:
