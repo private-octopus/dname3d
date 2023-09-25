@@ -93,16 +93,23 @@ asns = ip2as.asname()
 
 if asns.load(asn_names_file):
     tracked_asn = [ "GOOGLE", "AKAMAI", "AMAZON", "CLOUDFLARE", "FASTLY", "MICROSOFT",
-                  "AUTOMATTIC", "NAMECHEAP", "IPINFO", "OVH", "UNIFIED", "IONOS",
+                  "AWS", "AZURE", "AUTOMATTIC", "NAMECHEAP", "IPINFO", "OVH", "UNIFIED", "IONOS",
                   "SQUARESPACE", "ALIBABA", "HETZNER", "DIGITALOCEAN", "CONFLUENCE",
                   "INCAPSULA", "NEWFOLD", "HOSTINGER", "NETWORKSOLUTIONS",
                   "FACEBOOK" ]
+    n_asn = 0
+    n_big = 0
     with open(big_asn_file, "wt") as F:
         for asn in asn_list:
             asn_nb = int(asn)
             name = asns.name(asn_nb)
+            n_asn += 1
             for prefix in tracked_asn:
                 if name.startswith(prefix):
                     F.write(str(asn_nb) + ", \"" + name + "\"\n")
+                    n_big += 1
+                    break
+        print("Found " + str(n-asn) + " ASes, " + str(n_big) + " bigs.")
+
 
 
