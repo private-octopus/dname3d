@@ -12,6 +12,7 @@ import sys
 import dnslook
 import traceback
 import ipaddress
+import ip2as
 
 class asn_or_net:
     def __init__(self, name):
@@ -68,14 +69,17 @@ def write_list(n_dict, threshold, head_name, file_name):
                         F.write(name + "," + str(million_range) + "," + str(n_dict[name].w[million_range]) + "," + str(n_dict[name].w[million_range]/w_cat) + ",\n")
 
 # Main entry point
-if len(sys.argv) != 4 :
-    print("Usage: " + sys.argv[0] + " million_file net_file asn_file")
+if len(sys.argv) != 5 :
+    print("Usage: " + sys.argv[0] + " million_file asn_names net_file asn_file big_asn_file")
     exit(-1)
 
 million_file = sys.argv[1]
-net_file = sys.argv[2]
-asn_file = sys.argv[3]
+asn_names_file = sys.argv[2]
+net_file = sys.argv[3]
+asn_file = sys.argv[4]
+big_asn_file = sys.argv[5]
 
+# save the values
 mf = dnslook.load_dns_file(million_file)
 net_list = dict()
 asn_list = dict()
@@ -83,3 +87,22 @@ for dnslook_entry in mf:
     add_dnslook_entry(net_list, asn_list, dnslook_entry)
 write_list(net_list, 0.001, "network", net_file)
 write_list(asn_list, 0.001, "asn", asn_file)
+
+# get the AS names
+asns = ip2as.asname()
+
+if asns.load(asn_names_file):
+    tracked_asn = [ "GOOGLE", "AKAMAI", "AMAZON", "CLOUDFLARE", "FASTLY", "MICROSOFT",
+                  "AUTOMATTIC", "NAMECHEAP", "IPINFO", "OVH", "UNIFIED", "IONOS",
+                  "SQUARESPACE", "ALIBABA", "HETZNER", "DIGITALOCEAN", "CONFLUENCE",
+                  "INCAPSULA", "NEWFOLD", "HOSTINGER", "NETWORKSOLUTIONS",
+                  "FACEBOOK" ]
+    with open(big_asn_file, "wt") as F:
+        for asn in asn_list:
+            asn_nb = int(asn)
+            name = asns.name(asn_nb)
+            for prefix in tracked_asn:
+                if name.startswith(prefix):
+                    F.write(str(asn_nb) + ", \"" + name + "\"\n")
+
+
