@@ -69,7 +69,7 @@ def write_list(n_dict, threshold, head_name, file_name):
                         F.write(name + "," + str(million_range) + "," + str(n_dict[name].w[million_range]) + "," + str(n_dict[name].w[million_range]/w_cat) + ",\n")
 
 # Main entry point
-if len(sys.argv) != 5 :
+if len(sys.argv) != 6 :
     print("Usage: " + sys.argv[0] + " million_file asn_names net_file asn_file big_asn_file")
     exit(-1)
 
