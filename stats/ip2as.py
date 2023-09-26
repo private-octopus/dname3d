@@ -256,6 +256,15 @@ class ip2as_table:
 class asname:
     def __init__(self):
         self.table = dict()
+        self.aggregate = dict()
+        for pair in [
+            [ 9999999, "AKAMAI (multiple Ases)", "ZZ" ],
+            [ 9999998, "AMAZON & AWS (multiple Ases)", "ZZ" ],
+            [ 9999997, "Cloudflare (multiple Ases)", "ZZ" ],
+            [ 9999996, "Google (multiple Ases)", "US" ],
+            [ 9999995, "MICROSOFT (multiple Ases)", "US" ],
+            [ 9999994, "OVH (multiple Ases)", "FR" ] ]:
+            self.aggregate[pair[0]] = pair
 
     def load(self, file_name, test=False):
         ret = True
@@ -289,9 +298,42 @@ class asname:
 
     def name(self, asn):
         n = "?"
+        if asn in self.aggregate:
+            n = self.aggregate[asn][1]
         if asn in self.table:
             n = self.table[asn]
         return n
+
+class aggregated_asn:
+    def __init__(self):
+        self.aggregate = dict()
+        for pair in [
+            [ 33905, 9999999],
+            [ 16625, 9999999],
+            [ 20940, 9999999],
+            [ 21342, 9999999],
+            [ 8987, 9999998],
+            [ 16509, 9999998],
+            [ 14618, 9999998],
+            [ 44298, 9999998],
+            [ 13335, 9999997],
+            [ 209242, 9999997],
+            [ 15169, 9999996],
+            [ 19527, 9999996],
+            [ 16591, 9999996],
+            [ 396982, 9999996],
+            [ 3598, 9999995],
+            [ 8068, 9999995],
+            [ 8069, 9999995],
+            [ 8070, 9999995],
+            [ 8075, 9999995],
+            [ 16276, 9999994],
+            [ 35540, 9999994]]:
+            self.aggregate[pair[0]] = pair[1]
+    def get(self, asn):
+        if asn in self.aggregate:
+            asn = self.aggregate[asn]
+
 
 def load_ip2as(ip2as_file):
     i2a = ip2as_table()

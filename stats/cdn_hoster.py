@@ -50,9 +50,15 @@ def add_list_of_nets(net_dict, ip_list, ip_v6_list, million_range):
             print("Cannot parse IPv6 = " + ip6)
     add_list_of_asn_or_net(net_dict, n_list, million_range)
 
-def add_dnslook_entry(net_dict, asn_dict, dnslook_entry):
+def add_aggregated_asn(asn_dict, aggregator, raw_asn_list, million_range):
+    a_list = set()
+    for asn in raw_asn_list:
+        a_list.add(aggregator.get(asn))
+    add_list_of_asn_or_net(asn_dict, a_list, million_range)
+
+def add_dnslook_entry(net_dict, asn_dict, aggregator, dnslook_entry):
     add_list_of_nets(net_dict, dnslook_entry.ip, dnslook_entry.ipv6, dnslook_entry.million_range)
-    add_list_of_asn_or_net(asn_dict, dnslook_entry.ases, dnslook_entry.million_range)
+    add_aggregated_asn(asn_dict, aggregator, dnslook_entry.ases, dnslook_entry.million_range)
 
 def write_list(n_dict, threshold, head_name, file_name):
     with open(file_name, "wt") as F:
@@ -68,6 +74,28 @@ def write_list(n_dict, threshold, head_name, file_name):
                     if n_dict[name].w[million_range] > high_threshold:
                         F.write(name + "," + str(million_range) + "," + str(n_dict[name].w[million_range]) + "," + str(n_dict[name].w[million_range]/w_cat) + ",\n")
 
+def write_asn_list(asn_dict, asns, threshold, file_name):
+    w_cat = [ 0, 0, 0, 0, 0, 0 ]
+    for asn in asn_dict:
+        for r in range(0,6):
+            w_cat[r] += asn_dict[asn].w[r]
+    with open(file_name, "wt") as F:
+        F.write("asn, name")
+        for r in range(0,6):
+            F.write(", share[" + str(r) + "], weight[" + str(r) + "]")
+        F.write("\n")
+        for asn in asn_dict:
+            selected = False
+            for r in range(1,6):
+                if asn_dict[asn].w[r] > threshold:
+                    selected = True
+                    break
+            if selected:
+                F.write(str(asn) + ", \"" + asns.name(asn) +"\"")
+                for r in range(0,6):
+                    F.write(", " + str(asn_dict[asn].w[r]/w_cat[r]) + "," + str(asn_dict[asn].w[r]))
+                F.write("\n")
+
 # Main entry point
 if len(sys.argv) != 6 :
     print("Usage: " + sys.argv[0] + " million_file asn_names net_file asn_file big_asn_file")
@@ -78,38 +106,41 @@ asn_names_file = sys.argv[2]
 net_file = sys.argv[3]
 asn_file = sys.argv[4]
 big_asn_file = sys.argv[5]
+aggregator = ip2as.aggregated_asn()
+# get the AS names
+asns = ip2as.asname()
+if not asns.load(asn_names_file):
+    exit(-1)
 
 # save the values
 mf = dnslook.load_dns_file(million_file)
+print("!")
 net_list = dict()
 asn_list = dict()
 for dnslook_entry in mf:
     add_dnslook_entry(net_list, asn_list, dnslook_entry)
+print("!")
 write_list(net_list, 0.001, "network", net_file)
-write_list(asn_list, 0.001, "asn", asn_file)
+write_asn_list(asn_list, asns, 0.001, asn_file)
 
-# get the AS names
-asns = ip2as.asname()
-
-if asns.load(asn_names_file):
-    tracked_asn = [ "GOOGLE", "AKAMAI", "AMAZON", "CLOUDFLARE", "FASTLY", "MICROSOFT",
-                  "AWS", "AZURE", "AUTOMATTIC", "NAMECHEAP", "IPINFO", "OVH", "UNIFIED", "IONOS",
-                  "SQUARESPACE", "ALIBABA", "HETZNER", "DIGITALOCEAN", "CONFLUENCE",
-                  "INCAPSULA", "NEWFOLD", "HOSTINGER", "NETWORKSOLUTIONS",
-                  "FACEBOOK" ]
-    n_asn = 0
-    n_big = 0
-    with open(big_asn_file, "wt") as F:
-        for asn in asn_list:
-            asn_nb = int(asn)
-            name = asns.name(asn_nb)
-            n_asn += 1
-            for prefix in tracked_asn:
-                if name.startswith(prefix):
-                    F.write(str(asn_nb) + ", " + name + "\n")
-                    n_big += 1
-                    break
-        print("Found " + str(n_asn) + " ASes, " + str(n_big) + " bigs.")
+tracked_asn = [ "GOOGLE", "AKAMAI", "AMAZON", "CLOUDFLARE", "FASTLY", "MICROSOFT",
+                "AWS", "AZURE", "AUTOMATTIC", "NAMECHEAP", "IPINFO", "OVH", "UNIFIED", "IONOS",
+                "SQUARESPACE", "ALIBABA", "HETZNER", "DIGITALOCEAN", "CONFLUENCE",
+                "INCAPSULA", "NEWFOLD", "HOSTINGER", "NETWORKSOLUTIONS",
+                "FACEBOOK" ]
+n_asn = 0
+n_big = 0
+with open(big_asn_file, "wt") as F:
+    for asn in asn_list:
+        asn_nb = int(asn)
+        name = asns.name(asn_nb)
+        n_asn += 1
+        for prefix in tracked_asn:
+            if name.startswith(prefix):
+                F.write(str(asn_nb) + ", " + name + "\n")
+                n_big += 1
+                break
+    print("Found " + str(n_asn) + " ASes, " + str(n_big) + " bigs.")
 
 
 
