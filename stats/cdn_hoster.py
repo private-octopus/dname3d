@@ -21,10 +21,17 @@ class asn_or_net:
 
 
 def add_to_asn_or_net(n_dict, name, weight, million_range):
-    if million_range >= 0 and million_range < 6:
-        if not name in n_dict:
-            n_dict[name] = asn_or_net(name)
-        n_dict[name].w[million_range] += weight
+    try:
+        if million_range >= 0 and million_range < 6:
+            if not name in n_dict:
+                n_dict[name] = asn_or_net(name)
+            n_dict[name].w[million_range] += weight
+    except Exception as e:
+        traceback.print_exc()
+        print("Exception: " + str(e))
+        print("name: " + str(name))
+        print("Entries in dict: " + str(len(n_dict)))
+        exit(-1)
 
 def add_list_of_asn_or_net(n_dict, n_list, million_range):
     if len(n_list) > 0:
