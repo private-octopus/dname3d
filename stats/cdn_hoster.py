@@ -106,7 +106,7 @@ if asns.load(asn_names_file):
             n_asn += 1
             for prefix in tracked_asn:
                 if name.startswith(prefix):
-                    F.write(str(asn_nb) + ", \"" + name + "\"\n")
+                    F.write(str(asn_nb) + ", " + name + "\n")
                     n_big += 1
                     break
         print("Found " + str(n_asn) + " ASes, " + str(n_big) + " bigs.")
