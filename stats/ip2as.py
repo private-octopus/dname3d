@@ -333,6 +333,7 @@ class aggregated_asn:
     def get(self, asn):
         if asn in self.aggregate:
             asn = self.aggregate[asn]
+        return asn
 
 
 def load_ip2as(ip2as_file):
