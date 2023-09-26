@@ -109,7 +109,7 @@ if asns.load(asn_names_file):
                     F.write(str(asn_nb) + ", \"" + name + "\"\n")
                     n_big += 1
                     break
-        print("Found " + str(n-asn) + " ASes, " + str(n_big) + " bigs.")
+        print("Found " + str(n_asn) + " ASes, " + str(n_big) + " bigs.")
 
 
 
