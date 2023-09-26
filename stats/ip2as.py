@@ -330,7 +330,7 @@ class aggregated_asn:
             [ 16276, 9999994],
             [ 35540, 9999994]]:
             self.aggregate[pair[0]] = pair[1]
-    def get(self, asn):
+    def get_asn(self, asn):
         if asn in self.aggregate:
             asn = self.aggregate[asn]
         return asn

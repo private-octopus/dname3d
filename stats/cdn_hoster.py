@@ -60,7 +60,8 @@ def add_list_of_nets(net_dict, ip_list, ip_v6_list, million_range):
 def add_aggregated_asn(asn_dict, aggregator, raw_asn_list, million_range):
     a_list = set()
     for asn in raw_asn_list:
-        a_list.add(aggregator.get(asn))
+        new_asn = aggregator.get_asn(asn)
+        a_list.add(new_asn)
     add_list_of_asn_or_net(asn_dict, a_list, million_range)
 
 def add_dnslook_entry(net_dict, asn_dict, aggregator, dnslook_entry):
@@ -125,7 +126,7 @@ print("!")
 net_list = dict()
 asn_list = dict()
 for dnslook_entry in mf:
-    add_dnslook_entry(net_list, asns, asn_list, dnslook_entry)
+    add_dnslook_entry(net_list, aggregator, asn_list, dnslook_entry)
 print("!")
 write_list(net_list, 0.001, "network", net_file)
 write_asn_list(asn_list, asns, 0.001, asn_file)
