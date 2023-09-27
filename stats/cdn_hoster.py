@@ -64,6 +64,11 @@ def add_aggregated_asn(asn_dict, aggregator, raw_asn_list, million_range):
         a_list.add(new_asn)
     add_list_of_asn_or_net(asn_dict, a_list, million_range)
 
+# recompute the set of ASN to make sure bith IPv4 and IPv6 addresses
+def recompute_asn(dnslook_entry, i2a, i2a6):
+    if len(i2a.table) > 0 and len(i2a6.table) > 0:
+        dnslook_entry.get_asn(i2a, i2a6)
+
 def add_dnslook_entry(net_dict, asn_dict, aggregator, dnslook_entry):
     add_list_of_nets(net_dict, dnslook_entry.ip, dnslook_entry.ipv6, dnslook_entry.million_range)
     add_aggregated_asn(asn_dict, aggregator, dnslook_entry.ases, dnslook_entry.million_range)
@@ -105,8 +110,8 @@ def write_asn_list(asn_dict, asns, threshold, file_name):
                 F.write("\n")
 
 # Main entry point
-if len(sys.argv) != 6 :
-    print("Usage: " + sys.argv[0] + " million_file asn_names net_file asn_file big_asn_file")
+if len(sys.argv) != 8 :
+    print("Usage: " + sys.argv[0] + " million_file asn_names net_file asn_file big_asn_file i2as_file i2as6_file")
     exit(-1)
 
 million_file = sys.argv[1]
@@ -114,11 +119,18 @@ asn_names_file = sys.argv[2]
 net_file = sys.argv[3]
 asn_file = sys.argv[4]
 big_asn_file = sys.argv[5]
+ip2as_file = sys.argv[6]
+ip2as6_file = sys.argv[7]
 aggregator = ip2as.aggregated_asn()
 # get the AS names
 asns = ip2as.asname()
 if not asns.load(asn_names_file):
     exit(-1)
+    
+i2a = ip2as.load_ip2as(ip2as_file)
+i2a6 = ip2as.load_ip2as(ip2as6_file)
+
+print("Aggregator.get_asn(13335) = " + str(aggregator.get_asn(13335)))
 
 # save the values
 mf = dnslook.load_dns_file(million_file)
@@ -126,6 +138,7 @@ print("!")
 net_list = dict()
 asn_list = dict()
 for dnslook_entry in mf:
+    recompute_asn(dnslook_entry, i2a, i2a6)
     add_dnslook_entry(net_list, aggregator, asn_list, dnslook_entry)
 print("!")
 write_list(net_list, 0.001, "network", net_file)
