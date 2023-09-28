@@ -214,7 +214,6 @@ class dnslook:
         as_list = set()
         if len(i2a.table) > 0 and len(i2a6.table) > 0:
             for ipv4 in self.ip:
-                print(ipv4)
                 as_number = i2a.get_as_number(ipv4)
                 as_list.add(as_number)
             for ipv6 in self.ipv6:
