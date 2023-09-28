@@ -104,7 +104,7 @@ def write_asn_list(asn_dict, asns, threshold, file_name):
                     selected = True
                     break
             if selected:
-                F.write(str(asn) + ", \"" + asns.name(asn) +"\"")
+                F.write(str(asn) + ", \"" + ip2as.asname.clean(asns.name(asn)) +"\"")
                 for r in range(0,6):
                     F.write(", " + str(asn_dict[asn].w[r]/w_cat[r]) + "," + str(asn_dict[asn].w[r]))
                 F.write("\n")

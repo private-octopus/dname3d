@@ -266,6 +266,15 @@ class asname:
             [ 9999994, "OVH (multiple Ases)", "FR" ] ]:
             self.aggregate[pair[0]] = pair
 
+    def clean(name):
+        s = ""
+        for c in name:
+            if c != ',':
+                s += c
+            else:
+                s += ' '
+        return s
+
     def load(self, file_name, test=False):
         ret = True
         nb_asn = 0
