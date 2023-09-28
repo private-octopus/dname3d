@@ -332,8 +332,12 @@ class aggregated_asn:
             self.aggregate[pair[0]] = pair[1]
 
     def get_asn(self, asn):
-        if asn in self.aggregate:
-            asn = self.aggregate[asn]
+        try:
+            asn = int(asn)
+            if asn in self.aggregate:
+                asn = self.aggregate[asn]
+        except:
+            print("Cannot map ASN: " + str(asn))
         return asn
 
 
