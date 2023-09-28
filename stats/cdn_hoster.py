@@ -139,7 +139,7 @@ net_list = dict()
 asn_list = dict()
 for dnslook_entry in mf:
     recompute_asn(dnslook_entry, i2a, i2a6)
-    add_dnslook_entry(net_list, aggregator, asn_list, dnslook_entry)
+    add_dnslook_entry(net_list,asn_list,  aggregator, dnslook_entry)
 print("!")
 write_list(net_list, 0.001, "network", net_file)
 write_asn_list(asn_list, asns, 0.001, asn_file)
