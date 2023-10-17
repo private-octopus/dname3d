@@ -58,6 +58,8 @@ class dnslook:
         self.resolver.lifetime = 3
         self.million_rank = -1
         self.million_range = -1
+        self.dns_not_found = 0
+        self.dns_timeout = 0
 
     def to_json_array(x):
         jsa = "["

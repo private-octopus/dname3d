@@ -65,7 +65,7 @@ class ns_dict:
         for ns in self.d:
             if (len(ns.ip) == 0 and len(ns.ipv6) == 0) or not only_news:
                 nb += 1
-                il nb < n:
+                if nb < n:
                     sd[nb] = ns
                 else:
                     r = random.randint(1,nb)
