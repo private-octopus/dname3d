@@ -98,7 +98,7 @@ echo "Adding $NBSAMPLES to the DNS processed list"
     #../script/central_million.sh $YYYYMM $NBSAMPLES
     TEMP=/home/huitema/tmp/dnslookup_
     rm $TEMP*
-    /usr/local/python3.8/bin/python3 do_dnslookup.py $NBSAMPLES $IP2AS $PUB_S $MILLION $COM_SAMPLES $RESULT $TEMP
+    /usr/local/python3.8/bin/python3 do_dnslookup.py $NBSAMPLES $IP2AS $IP2AS6 $PUB_S $MILLION $COM_SAMPLES $RESULT $TEMP
 fi
 
 if [ -f $RESULT ]
