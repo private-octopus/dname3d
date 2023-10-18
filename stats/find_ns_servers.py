@@ -20,7 +20,7 @@ import concurrent.futures
 import os
 
 class ns_dict:
-    def __init__():
+    def __init__(self):
         self.d = dict()
         self.nb_duplicate = 0
 

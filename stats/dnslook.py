@@ -132,6 +132,18 @@ class dnslook:
             ret = False
         return(ret)
 
+    def protected_dns_query(self, record_type):
+        response = []
+        success = True;
+        try:
+            response = self.resolver.query(self.domain, record_type)
+        except dns.resolver.NoAnswer:
+            success = False
+        except Exception as e:
+            success = False
+            print("Exception when querying" + self.domain + "/" + record_type + ": " + str(e))
+        return success, response
+
     def get_a(self):
         self.ip = []
         try:
