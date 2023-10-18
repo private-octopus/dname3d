@@ -54,7 +54,7 @@ class ns_dict:
 
     def add_ns_name(self, domain):
         if not domain in self.d:
-            ns_item = dnslook()
+            ns_item = dnslook.dnslook()
             ns_item.domain = domain
             self.d[domain] = ns_item
 
