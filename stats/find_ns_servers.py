@@ -56,7 +56,7 @@ class ns_dict:
         if not name in self.d:
             ns_item = dnslook()
             ns_item.domain = domain
-            self.d[name] = ns_item
+            self.d[domain] = ns_item
 
    
     def random_list(n, only_news = False):
