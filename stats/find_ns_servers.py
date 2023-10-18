@@ -28,7 +28,7 @@ class ns_dict:
         loaded = 0
         for line in open(ns_json, "rt"):
             loaded += 1
-            ns_item = dnslook()
+            ns_item = dnslook.dnslook()
             try:
                 ns_item.from_json(line)
                 if ns_item.domain in d:
