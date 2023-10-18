@@ -53,7 +53,7 @@ class ns_dict:
                 F.write(s)
 
     def add_ns_name(self, domain):
-        if not name in self.d:
+        if not domain in self.d:
             ns_item = dnslook()
             ns_item.domain = domain
             self.d[domain] = ns_item
