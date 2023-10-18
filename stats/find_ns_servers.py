@@ -63,7 +63,7 @@ class ns_dict:
         sd = dict()
         nb = 0
         for ns in self.d:
-            if (len(ns.ip) == 0 and len(ns.ipv6) == 0) or not only_news:
+            if (len(self.d[ns].ip) == 0 and len(self.d[ns].ipv6) == 0) or not only_news:
                 nb += 1
                 if nb < n:
                     sd[nb] = ns
