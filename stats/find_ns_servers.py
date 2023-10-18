@@ -105,13 +105,16 @@ def main():
     millions = dnslook.load_dns_file(million_file, dot_after=10000)
     # load the current ns list
     nd = ns_dict()
-    nd.load_ns_file(ns_file, dot_after=10000)
-    selected = nd.random_list(1000, only_news = False)
-    print("Selected " + str(len(selected)) + " ns items out of " + str(len(nd.d)))
+    try:
+        nd.load_ns_file(ns_file, dot_after=10000)
+    except Exception e:
+        print("Could not load " + ns_file + ", exception: " + str(e))
+    print("NS list has " + str(len(nd.d)) + " entries")
     # add the ns records from the million file to the ns list:
     for dns_item in millions:
         for ns in dns_item.ns:
             nd.add_ns_name(ns)
+    print("After loading from millions, NS list has " + str(len(nd.d)) + " entries")
     selected = nd.random_list(1000, only_news = False)
     print("Selected " + str(len(selected)) + " ns items out of " + str(len(nd.d)))
 
