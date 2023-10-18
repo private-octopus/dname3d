@@ -103,6 +103,7 @@ def main():
 
     # Load the million file.
     millions = dnslook.load_dns_file(million_file, dot_after=10000)
+    print("\nLoaded " + str(len(millions)) + " domains.")
     # load the current ns list
     nd = ns_dict()
     try:
