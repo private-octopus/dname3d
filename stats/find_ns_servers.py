@@ -59,7 +59,7 @@ class ns_dict:
             self.d[domain] = ns_item
 
    
-    def random_list(n, only_news=False):
+    def random_list(self, n, only_news=False):
         sd = dict()
         nb = 0
         for ns in self.d:
