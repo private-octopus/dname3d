@@ -59,7 +59,7 @@ class ns_dict:
             self.d[domain] = ns_item
 
    
-    def random_list(n, only_news = False):
+    def random_list(n, only_news=False):
         sd = dict()
         nb = 0
         for ns in self.d:
@@ -116,7 +116,7 @@ def main():
         for ns in dns_item.ns:
             nd.add_ns_name(ns)
     print("After loading from millions, NS list has " + str(len(nd.d)) + " entries")
-    selected = nd.random_list(1000, only_news = False)
+    selected = nd.random_list(1000, only_news=True)
     print("Selected " + str(len(selected)) + " ns items out of " + str(len(nd.d)))
 
 
