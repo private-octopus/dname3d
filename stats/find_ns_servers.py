@@ -74,7 +74,7 @@ class ns_dict:
                         sd[x] = ns
         selected = []
         for x in sd:
-            selected.append[sd[x]]
+            selected.append(sd[x])
         return selected
 
 
