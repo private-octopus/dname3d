@@ -60,6 +60,8 @@ class dnslook:
         self.million_range = -1
         self.dns_not_found = 0
         self.dns_timeout = 0
+        self.zone_dns_error = 0
+        self.nb_queries = 0
 
     def to_json_array(x):
         jsa = "["
@@ -92,6 +94,12 @@ class dnslook:
             js += ",\"range\":" + str(self.million_range)
         if len(self.ases) > 0:
             js += ",\"ases\":" + dnslook.to_json_array(self.ases)
+        if self.dns_not_found != 0:
+            js += ",\"dns_not_found\":" + str(self.dns_not_found)
+        if self.dns_timeout != 0:
+            js += ",\"dns_timeout\":" + str(self.dns_timeout)
+        if self.nb_queries != 0:
+            js += ",\"nb_queries\":" + str(self.nb_queries)
         js += "}"
         return(js)
     
@@ -124,6 +132,12 @@ class dnslook:
                     self.million_rank = jd['rank']
                 if 'range' in jd:
                     self.million_range = jd['range']
+                if 'dns_not_found' in jd:
+                    self.dns_not_found = jd['dns_not_found']
+                if 'dns_timeout' in jd:
+                    self.dns_timeout = jd['dns_timeout']
+                if 'nb_queries' in jd:
+                    self.nb_queries = jd['nb_queries']
 
         except Exception as e:
             traceback.print_exc()
@@ -138,29 +152,28 @@ class dnslook:
         try:
             response = self.resolver.query(self.domain, record_type)
         except dns.resolver.NoAnswer:
+            pass
+        except dns.exception.Timeout:
             success = False
+            self.dns_timeout += 1
         except Exception as e:
+            self.dns_not_found += 1
             success = False
-            print("Exception when querying" + self.domain + "/" + record_type + ": " + str(e))
         return success, response
 
     def get_a(self):
         self.ip = []
-        try:
-            addresses = self.resolver.query(self.domain, 'A')
+        success, addresses = self.protected_dns_query('A')
+        if success:
             for ipval in addresses:
                 self.ip.append(ipval.to_text())
-        except Exception as e:
-            pass
 
     def get_aaaa(self):
         self.ipv6 = []
-        try:
-            addresses = self.resolver.query(self.domain, 'AAAA')
+        success, addresses = self.protected_dns_query('AAAA')
+        if success:
             for ipval in addresses:
                 self.ipv6.append(ipval.to_text())
-        except Exception as e:
-            pass
 
     def get_ns(self):
         self.ns = []
@@ -174,6 +187,11 @@ class dnslook:
                 nameservers = self.resolver.query(self.zone, 'NS')
                 for nsval in nameservers:
                     self.ns.append(sanitize(nsval.to_text()))
+                break
+            except dns.resolver.NoAnswer:
+                break
+            except dns.exception.Timeout:
+                self.dns_timeout += 1
                 break
             except Exception as e:
                 nameparts.pop(0)
@@ -193,7 +211,7 @@ class dnslook:
             except dns.resolver.NoAnswer:
                 pass
             except Exception as e:
-                print("Exception when querying DS for " + self.zone + ": " + str(e))
+                self.zone_dns_error += 1
 
     def get_cname(self):
         self.cname = []
@@ -247,7 +265,7 @@ class dnslook:
             self.million_range = rng
         else:
             print("No range for " + self.domain)
-
+        self.dns_timeout = 0
         start_time = time.time()
         self.get_a()
         a_time = time.time()
@@ -270,6 +288,7 @@ class dnslook:
         stats[4] += cname_time - ds_algo_time
         stats[5] += server_time - cname_time
         stats[6] += asn_time - server_time
+        self.nb_queries += 1
 
 def load_dns_file(dns_json, dot_after=10000):
     stats = []
