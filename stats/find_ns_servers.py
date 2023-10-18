@@ -108,7 +108,7 @@ def main():
     nd = ns_dict()
     try:
         nd.load_ns_file(ns_file, dot_after=10000)
-    except Exception e:
+    except Exception as e:
         print("Could not load " + ns_file + ", exception: " + str(e))
     print("NS list has " + str(len(nd.d)) + " entries")
     # add the ns records from the million file to the ns list:
