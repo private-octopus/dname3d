@@ -263,8 +263,6 @@ class dnslook:
             self.million_rank = rank
         if rng >= 0:
             self.million_range = rng
-        else:
-            print("No range for " + self.domain)
         self.dns_timeout = 0
         start_time = time.time()
         self.get_a()
@@ -280,6 +278,44 @@ class dnslook:
         self.get_server(ps)
         server_time = time.time()
         self.get_asn(i2a, i2a6)
+        asn_time = time.time()
+        stats[0] += a_time - start_time
+        stats[1] += aaaa_time - a_time
+        stats[2] += ns_time - aaaa_time
+        stats[3] += ds_algo_time - ns_time
+        stats[4] += cname_time - ds_algo_time
+        stats[5] += server_time - cname_time
+        stats[6] += asn_time - server_time
+        self.nb_queries += 1
+
+    def retry_domain_data(self, ps, i2a, i2a6, stats):
+        need_new_as = False
+        self.dns_timeout = 0
+        start_time = time.time()
+        if len(self.ip) == 0:
+            self.get_a()  
+            need_new_as = True
+        a_time = time.time()
+        if len(self.ipv6) == 0:
+            self.get_aaaa() 
+            need_new_as = True
+        aaaa_time = time.time()
+        if len(self.ns) == 0:
+            self.get_ns()
+        ns_time = time.time()
+        if len(self.ds_algo) == 0:
+            self.get_ds_algo()
+        ds_algo_time = time.time()
+        if len(self.cname) == 0:
+            self.get_cname()
+            cname_time = time.time()
+            self.get_server(ps)
+            server_time = time.time()
+        else:
+            cname_time = time.time()
+            server_time = time.time()
+        if len(self.ases) == 0 or need_new_as:
+            self.get_asn(i2a, i2a6)
         asn_time = time.time()
         stats[0] += a_time - start_time
         stats[1] += aaaa_time - a_time

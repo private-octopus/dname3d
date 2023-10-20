@@ -11,7 +11,7 @@
 # M9.3.* -- statistics for next 9000 hosts
 # M9.4.* -- statistics for next 90000 hosts
 # M9.5.* -- statistics for next 900000 hosts
-# M9.5.* -- statistics for .COM hosts
+# M9.6.* -- statistics for .COM hosts
 #
 # For each class, we measure:
 #

@@ -61,6 +61,9 @@ for domain in domains:
     for ipv6 in v.ipv6:
         as_number = i2a6.get_as_number(ipv6)
         print(ipv6 + " -> AS" + str(as_number))
+    while v.dns_timeout > 0 and v.nb_queries < 3:
+        print("Retrying " + v.domain + " because timeout: " + str(v.dns_timeout) + ", not found: " + str(v.dns_not_found))
+        v.retry_domain_data(ps, i2a, i2a6, stats)
     w = dnslook.dnslook()
     if w.from_json(js):
         js2 = w.to_json()
