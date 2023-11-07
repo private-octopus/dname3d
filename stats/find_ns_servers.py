@@ -208,6 +208,12 @@ def main():
         nd.load_ns_file(ns_file, dot_after=10000)
     except Exception as e:
         print("Could not load " + ns_file + ", exception: " + str(e))
+
+    print("NS list has " + str(len(nd.d)) + " entries, scanning millions.")
+    # Adding NS records from million list
+    for dnsl in millions:
+        for ns in dnsl.ns:
+            nd.add_ns_name(ns)
     print("NS list has " + str(len(nd.d)) + " entries")
     
     targets = nd.random_list(nb_trials, only_news=True)
