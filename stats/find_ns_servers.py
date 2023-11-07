@@ -230,27 +230,23 @@ def main():
     suffix_weights = key_weights()
     as_weights = key_weights()
     ns_as_weight2 = key_weights()
-    ns_ip_weight = key_weights()
+    ns_ip4_weight = key_weights()
+    ns_ip6_weight = key_weights()
     for dns_item in millions:
         ns_suffixes = set()
         as_numbers = set()
         ns_as_numbers = set()
-        ns_ip_addresses = set()
         for ns in dns_item.ns:
             nd.add_ns_name(ns)
             ns_suffix = zoneparser.extract_server_suffix(ns, ps, zp.dups)
             ns_suffixes.add(ns_suffix)
             for asn in nd.d[ns].ases:
-                ns_as_numbers.add(asn_ag.get_asn(asn))
-            for ipaddr in nd.d[ns].ip:
-                ns_ip_addresses.add(ipaddr)
-            for ipaddr6 in nd.d[ns].ipv6:
-                ns_ip_addresses.add(ipaddr6)
+                ns_as_numbers.add(asn_ag.get_asn(asn)) 
+            ns_ip4_weight.add_names(nd.d[ns].ip, dns_item.million_range)
+            ns_ip6_weight.add_names(nd.d[ns].ipv6, dns_item.million_range)
         ns_weights.add_names(dns_item.ns, dns_item.million_range)
         suffix_weights.add_names(ns_suffixes, dns_item.million_range)
         ns_as_weight2.add_names(ns_as_numbers, dns_item.million_range)
-        print("Adding " + str(len(ns_ip_addresses)) + " addresses.")
-        ns_ip_weight.add_names(ns_ip_addresses, dns_item.million_range)
         
         for asn in dns_item.ases:
             as_numbers.add(asn_ag.get_asn(asn))
@@ -259,6 +255,9 @@ def main():
     print("After loading from millions, Suffix weights has " + str(len(suffix_weights.weight)) + " entries")
     print("After loading from millions, AS weights has " + str(len(as_weights.weight)) + " entries")
     print("After loading from NS, NS_AS2 weights has " + str(len(ns_as_weight2.weight)) + " entries")
+    print("After loading from NS, NS_IP4 weights has " + str(len(ns_ip4_weight.weight)) + " entries")
+    print("After loading from NS, NS_IP6 weights has " + str(len(ns_ip4_weight.weight)) + " entries")
+
     ns_as_weights = key_weights()
     for ns in ns_weights.weight:
         if ns in nd.d:
@@ -309,10 +308,18 @@ def main():
         print(str(nb_top) + ": " + str(kri.key)  + ", " + asns.name(kri.key) + ", " + str(kri.weight))
         if nb_top >= 10:
             break
-    top_ns_ip = ns_ip_weight.get_sorted_list(-1)
-    print("Top_ns_ip has : " + str(len(top_ns_ip)))
+    top_ns_ip4 = ns_ip4_weight.get_sorted_list(-1)
+    print("Top_ns_ip4 has : " + str(len(top_ns_ip4)))
     nb_top = 0
-    for kri in top_ns_ip:
+    for kri in top_ns_ip4:
+        nb_top += 1
+        print(str(nb_top) + ": " + str(kri.key)  + ", " + str(kri.key) + ", " + str(kri.weight))
+        if nb_top >= 10:
+            break
+    top_ns_ip6 = ns_ip6_weight.get_sorted_list(-1)
+    print("Top_ns_ip6 has : " + str(len(top_ns_ip6)))
+    nb_top = 0
+    for kri in top_ns_ip6:
         nb_top += 1
         print(str(nb_top) + ": " + str(kri.key)  + ", " + str(kri.key) + ", " + str(kri.weight))
         if nb_top >= 10:
