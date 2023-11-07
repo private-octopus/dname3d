@@ -16,6 +16,7 @@ import dnslook
 import random
 import million_random
 import dns_bucket
+import zoneparser
 import time
 import concurrent.futures
 import os
@@ -98,48 +99,72 @@ class ns_dict:
             else:
                 ns_item.retry_domain_data(ps, i2a, i2a6, stats)
 
-class ns_stats_by_range:
+class key_range_item:
+    def __init__(self, key, rng, weight):
+        self.key = key
+        self.rng = rng
+        self.weight = weight
+
+class key_weights:
     def __init__(self):
-        self.table = dict()
-        self.sum_weights = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-            
-class ns_stats_by_key:
-    def __init__(self, key_type):
-        self.key_type = key_type
-        self.table = dict()
-        self.sum_weights = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        self.weight = dict()
+        self.total = [0, 0, 0, 0, 0, 0, 0]
+        self.nb_names = [0, 0, 0, 0, 0, 0, 0]
 
-    def add_key_weights(self, keys, weights):
-        if len(keys) > 0:
-            wkey = 1.0/len(keys)
-            for key in keys:
-                if not key in self.table:
-                    self.table[key] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-                for x in range(0,7):
-                    self.table[key][x] += weights[x]*wkey
-                    self.sum_weights[x] += weight[x]*wkey
+    # add a vector of weights for a set of keys
+    def add_key_weight(self, key_set, key_weight):
+        w = 1.0
+        if len(key_set) > 1:
+            w /= len(key_set)
+        for key in key_set:
+            if not key in self.weight:
+                self.weight[key] = [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ]
+            for i in range(0,7):
+                if len(key_weight) > 1:
+                    self.weight[key][i] += key_weight[i]*w
 
-    def add_domain_weights(self, ns_set, rng):
-        if rng > 0 and rng < 7:
-            weight = 1.0
-            if len(ns_set) > 1:
-                weight /= len(ns_set)
-            for ns in ns_set:
-                if not ns in self.table:
-                    self.table[ns] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-                self.table[ns][rng] += weight
-                self.sum_weights[rng] += weight
+    # add one domain name in million range rng
+    def add_names(self, key_set, rng):
+        w = [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ]
+        if rng >= 0 and rng < 7:
+            w[rng] = 1.0
+            self.add_key_weight(key_set, w)
+            self.nb_names[rng] += 1
+            self.total[rng] += len(key_set)
+        else:
+            print("RNG = " + str(rng))
 
+    # we have weights per key. we define top keys as keys that
+    # have either a max value in a specific column, or a max value
+    # for the sum of columns 0 to 4 (100, 1000, 10000, 100000, 1M)
+    def get_sorted_list(self, rng):
+        key_list = []
+        for key in self.weight:
+            w = 0
+            weights = self.weight[key]
+            if rng >= 0 and rng < len(weights):
+                w = weights[rng]
+            elif rng < 0:
+                for i in range(0,6):
+                    if len(weights) > i:
+                        w += weights[i]
+            if w > 0:
+                key_list.append(key_range_item(key, rng, w))
 
+        sorted_list = sorted(key_list, key=lambda item: item.weight, reverse=True)
+        return sorted_list
 
-
-
+def key_range_item_to_M9(kri, F):
+    # First compute total and average
+    # then compute top50, top 90
+    # then write the "top N" list
+    pass
 
 # Main
 def main():
     start_time = time.time()
-    if len(sys.argv) != 7 and len(sys.argv) != 8:
-        print("Usage: " + sys.argv[0] + " nb_trials ip2as.csv ip2as6.csv publicsuffix.dat million_domain_list million_ns_list [tmp_prefix]")
+    if len(sys.argv) != 9 and len(sys.argv) != 10:
+        print("Usage: " + sys.argv[0] + " nb_trials ip2as.csv ip2as6.csv publicsuffix.dat dups asn_file million_domain_list million_ns_list [tmp_prefix]")
         exit(1)
     try:
         nb_trials = int(sys.argv[1])
@@ -149,10 +174,12 @@ def main():
     ip2as_file = sys.argv[2]
     ip2as6_file = sys.argv[3]
     public_suffix_file = sys.argv[4]
-    million_file = sys.argv[5]
-    ns_file = sys.argv[6]
-    if len(sys.argv) == 8:
-        temp_prefix = sys.argv[7]
+    dups_file = sys.argv[5]
+    asn_file = sys.argv[6]
+    million_file = sys.argv[7]
+    ns_file = sys.argv[8]
+    if len(sys.argv) == 10:
+        temp_prefix = sys.argv[9]
     else:
         temp_prefix = ""
 
@@ -160,13 +187,21 @@ def main():
     if not ps.load_file(public_suffix_file):
         print("Could not load the suffixes")
         exit(1)
-
+    
+    zp = zoneparser.zone_parser2(ps)
+    zp.load_dups(dups_file)
+    # get the AS names
+    asns = ip2as.asname()
+    if not asns.load(asn_file):
+        exit(-1)
+    asn_ag = ip2as.aggregated_asn()
     i2a = ip2as.load_ip2as(ip2as_file)
     i2a6 = ip2as.load_ip2as(ip2as6_file)
 
     # Load the million file.
     millions = dnslook.load_dns_file(million_file, dot_after=10000)
     print("\nLoaded " + str(len(millions)) + " domains from million file.")
+    
     # load the current ns list
     nd = ns_dict()
     try:
@@ -174,21 +209,91 @@ def main():
     except Exception as e:
         print("Could not load " + ns_file + ", exception: " + str(e))
     print("NS list has " + str(len(nd.d)) + " entries")
-    # add the ns records from the million file to the ns list:
-    for dns_item in millions:
-        for ns in dns_item.ns:
-            nd.add_ns_name(ns)
-    print("After loading from millions, NS list has " + str(len(nd.d)) + " entries")
+    
     targets = nd.random_list(nb_trials, only_news=True)
     print("Selected " + str(len(targets)) + " targets out of " + str(len(nd.d)))
+    
+    # add the ns records from the million file to the ns list:
     stats = [ 0, 0, 0, 0, 0, 0, 0]
-    # nd.get_data(selected, ps, i2a, i2a6, stats)
     dl = dns_bucket.bucket_list(nd.d, targets, ps, i2a, i2a6, temp_prefix, "_ns.csv", "_stats.csv")
     dl.run()
-
+    
     nd.save_ns_file(ns_file)
+    # tabulate by AS, NS, etc.
+    ns_weights = key_weights()
+    suffix_weights = key_weights()
+    as_weights = key_weights()
+    ns_as_weight2 = key_weights()
+    for dns_item in millions:
+        ns_suffixes = set()
+        as_numbers = set()
+        ns_as_numbers = set()
+        for ns in dns_item.ns:
+            nd.add_ns_name(ns)
+            ns_suffix = zoneparser.extract_server_suffix(ns, ps, zp.dups)
+            ns_suffixes.add(ns_suffix)
+            for asn in nd.d[ns].ases:
+                ns_as_numbers.add(asn_ag.get_asn(asn))
+        ns_weights.add_names(dns_item.ns, dns_item.million_range)
+        suffix_weights.add_names(ns_suffixes, dns_item.million_range)
+        ns_as_weight2.add_names(ns_as_numbers, dns_item.million_range)
+        for asn in dns_item.ases:
+            as_numbers.add(asn_ag.get_asn(asn))
+        as_weights.add_names(as_numbers, dns_item.million_range)
+    print("After loading from millions, NS weights has " + str(len(ns_weights.weight)) + " entries")
+    print("After loading from millions, Suffix weights has " + str(len(suffix_weights.weight)) + " entries")
+    print("After loading from millions, AS weights has " + str(len(as_weights.weight)) + " entries")
+    print("After loading from NS, NS_AS2 weights has " + str(len(ns_as_weight2.weight)) + " entries")
+    ns_as_weights = key_weights()
+    for ns in ns_weights.weight:
+        if ns in nd.d:
+            as_numbers = set()
+            for asn in nd.d[ns].ases:
+                as_numbers.add(asn_ag.get_asn(asn))
+            ns_as_weights.add_key_weight(as_numbers, ns_weights.weight[ns])
+    print("After loading from NS, NS_AS weights has " + str(len(ns_as_weights.weight)) + " entries")
 
-
+    # try sorting
+    top_ns = ns_weights.get_sorted_list(-1)
+    print("Top_ns has : " + str(len(top_ns)))
+    nb_top = 0
+    for kri in top_ns:
+        nb_top += 1
+        print(str(nb_top) + ": " + str(kri.key) + "," + str(kri.weight))
+        if nb_top >= 10:
+            break;
+    top_suffix = suffix_weights.get_sorted_list(-1)
+    print("top_suffix has : " + str(len(top_suffix)))
+    nb_top = 0
+    for kri in top_suffix:
+        nb_top += 1
+        print(str(nb_top) + ": " + str(kri.key) + "," + str(kri.weight))
+        if nb_top >= 10:
+            break;
+    top_as = as_weights.get_sorted_list(-1)
+    print("Top_as has : " + str(len(top_as)))
+    nb_top = 0
+    for kri in top_as:
+        nb_top += 1
+        print(str(nb_top) + ": "  + str(kri.key) + ", " + asns.name(kri.key) + ", " + str(kri.weight))
+        if nb_top >= 10:
+            break;
+    top_ns_as = ns_as_weights.get_sorted_list(-1)
+    print("Top_ns_as has : " + str(len(top_ns_as)))
+    nb_top = 0
+    for kri in top_ns_as:
+        nb_top += 1
+        print(str(nb_top) + ": " + str(kri.key)  + ", " + asns.name(kri.key) + ", " + str(kri.weight))
+        if nb_top >= 10:
+            break
+    top_ns_as2 = ns_as_weight2.get_sorted_list(-1)
+    print("Top_ns_as has : " + str(len(top_ns_as)))
+    nb_top = 0
+    for kri in top_ns_as2:
+        nb_top += 1
+        print(str(nb_top) + ": " + str(kri.key)  + ", " + asns.name(kri.key) + ", " + str(kri.weight))
+        if nb_top >= 10:
+            break
 
 # actual main program, can be called by threads, etc.
 if __name__ == '__main__':
