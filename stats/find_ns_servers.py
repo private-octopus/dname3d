@@ -131,8 +131,6 @@ class key_weights:
             self.add_key_weight(key_set, w)
             self.nb_names[rng] += 1
             self.total[rng] += len(key_set)
-        else:
-            print("RNG = " + str(rng))
 
     # we have weights per key. we define top keys as keys that
     # have either a max value in a specific column, or a max value
@@ -153,6 +151,31 @@ class key_weights:
 
         sorted_list = sorted(key_list, key=lambda item: item.weight, reverse=True)
         return sorted_list
+
+def write_key_range_items(key_list, file_name, key_name, weight_name):
+    with open(file_name, "w") as F:
+        F.write(key_name + ", " + weight_name + "\n")
+        for kri in key_list:
+            F.write(str(kri.key) + "," + str(kri.weight) + "\n")
+    print("Saved " + str(len(key_list)) + " " + key_name + " in " + file_name)
+
+def print_top_key_range_items(key_list, list_name):
+    print(list_name + " has : " + str(len(key_list)))
+    nb_top = 0
+    for kri in key_list:
+        nb_top += 1
+        print(str(nb_top) + ": " + str(kri.key) + "," + str(kri.weight))
+        if nb_top >= 10:
+            break;
+
+def print_top_key_range_asn(key_list, list_name, asns):
+    print(list_name + " has : " + str(len(key_list)))
+    nb_top = 0
+    for kri in key_list:
+        nb_top += 1
+        print(str(nb_top) + ": "  + str(kri.key) + ", " + asns.name(kri.key) + ", " + str(kri.weight))
+        if nb_top >= 10:
+            break;
 
 def key_range_item_to_M9(kri, F):
     # First compute total and average
@@ -269,61 +292,22 @@ def main():
 
     # try sorting
     top_ns = ns_weights.get_sorted_list(-1)
-    print("Top_ns has : " + str(len(top_ns)))
-    nb_top = 0
-    for kri in top_ns:
-        nb_top += 1
-        print(str(nb_top) + ": " + str(kri.key) + "," + str(kri.weight))
-        if nb_top >= 10:
-            break;
+    print_top_key_range_items(top_ns, "top_ns")
     top_suffix = suffix_weights.get_sorted_list(-1)
-    print("top_suffix has : " + str(len(top_suffix)))
-    nb_top = 0
-    for kri in top_suffix:
-        nb_top += 1
-        print(str(nb_top) + ": " + str(kri.key) + "," + str(kri.weight))
-        if nb_top >= 10:
-            break;
+    print_top_key_range_items(top_suffix, "top_suffix")
     top_as = as_weights.get_sorted_list(-1)
-    print("Top_as has : " + str(len(top_as)))
-    nb_top = 0
-    for kri in top_as:
-        nb_top += 1
-        print(str(nb_top) + ": "  + str(kri.key) + ", " + asns.name(kri.key) + ", " + str(kri.weight))
-        if nb_top >= 10:
-            break;
+    print_top_key_range_asn(top_as, "top_as", asns)
     top_ns_as = ns_as_weights.get_sorted_list(-1)
-    print("Top_ns_as has : " + str(len(top_ns_as)))
-    nb_top = 0
-    for kri in top_ns_as:
-        nb_top += 1
-        print(str(nb_top) + ": " + str(kri.key)  + ", " + asns.name(kri.key) + ", " + str(kri.weight))
-        if nb_top >= 10:
-            break
+    print_top_key_range_asn(top_ns_as, "top_ns_as", asns)
     top_ns_as2 = ns_as_weight2.get_sorted_list(-1)
-    print("Top_ns_as has : " + str(len(top_ns_as)))
-    nb_top = 0
-    for kri in top_ns_as2:
-        nb_top += 1
-        print(str(nb_top) + ": " + str(kri.key)  + ", " + asns.name(kri.key) + ", " + str(kri.weight))
-        if nb_top >= 10:
-            break
+    print_top_key_range_asn(top_ns_as2, "top_ns_as2", asns)
+
     top_ns_ip4 = ns_ip4_weight.get_sorted_list(-1)
-    print("Top_ns_ip4 has : " + str(len(top_ns_ip4)))
-    nb_top = 0
-    for kri in top_ns_ip4:
-        nb_top += 1
-        print(str(nb_top) + ": " + str(kri.key)  + ", " + str(kri.key) + ", " + str(kri.weight))
-        if nb_top >= 10:
-            break
+    print_top_key_range_items(top_ns_ip4, "top_ns_ip4")
+    write_key_range_items(top_ns_ip4, temp_prefix + "top_ns_ip4.csv", "ipv4", "weight")
     top_ns_ip6 = ns_ip6_weight.get_sorted_list(-1)
-    print("Top_ns_ip6 has : " + str(len(top_ns_ip6)))
-    nb_top = 0
-    for kri in top_ns_ip6:
-        nb_top += 1
-        print(str(nb_top) + ": " + str(kri.key)  + ", " + str(kri.key) + ", " + str(kri.weight))
-        if nb_top >= 10:
-            break
+    print_top_key_range_items(top_ns_ip6, "top_ns_ip6")
+    write_key_range_items(top_ns_ip6, temp_prefix + "top_ns_ip6.csv", "ipv6", "weight")
 
 # actual main program, can be called by threads, etc.
 if __name__ == '__main__':
