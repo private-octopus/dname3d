@@ -269,11 +269,15 @@ class asname:
 
     def clean(name):
         s = ""
+        was_blank = False
         for c in name:
-            if c != ',':
-                s += c
+            if c == ',':
+                c = ' '
+            if was_blank and c == ' ':
+                continue
             else:
-                s += ' '
+                was_blank = c == ' '
+            s += c
         return s
 
     def load(self, file_name, test=False):
@@ -307,11 +311,12 @@ class asname:
         return ret
 
     def name(self, asn):
-        n = "?"
         if asn in self.aggregate:
             n = self.aggregate[asn][1]
         if asn in self.table:
             n = self.table[asn]
+        else:
+            n = 'AS' + str(asn)
         return n
 
 class aggregated_asn:

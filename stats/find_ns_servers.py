@@ -105,6 +105,40 @@ class key_range_item:
         self.rng = rng
         self.weight = weight
 
+
+def key_list_to_M9(key_list, m9date, metric, key_per_name, top_set, F):
+    total_weight = 0
+    # First compute total and average
+    for kri in key_list:
+        total_weight += kri.weight
+    if total_weight > 0:
+        # then compute top50, top 90
+        cumul_weight = 0
+        weight50 = 50*total_weight / 100
+        weight90 = 90*total_weight / 100
+        top50 = 1
+        top90 = 1
+        for kri in key_list:
+            cumul_weight += kri.weight
+            if cumul_weight < weight50:
+                top50 += 1
+            if cumul_weight < weight90:
+                top90 += 1
+            else:
+                break
+        # write the values
+        F.write(metric + ".1," + m9date +",v2.0, ," + str(key_per_name) + "\n")
+        F.write(metric + ".2," + m9date + ",v2.0, ," + str(top50) + "\n")
+        F.write(metric + ".3," + m9date + ",v2.0, ," + str(top90) + "\n")
+        nb_written = 0
+        for kri in key_list:
+            fraction =  kri.weight / total_weight
+            nb_written += 1
+            if nb_written <= 10 or fraction >= 0.005 or kri.key in top_set :
+                F.write(metric + ".4," + m9date + ",v2.0, " + str(kri.key) + "," + str(fraction) + "\n")
+            if nb_written > 10 and fraction < 0.0005:
+                break
+
 class key_weights:
     def __init__(self):
         self.weight = dict()
@@ -120,7 +154,7 @@ class key_weights:
             if not key in self.weight:
                 self.weight[key] = [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ]
             for i in range(0,7):
-                if len(key_weight) > 1:
+                if len(key_weight) > i:
                     self.weight[key][i] += key_weight[i]*w
 
     # add one domain name in million range rng
@@ -129,8 +163,9 @@ class key_weights:
         if rng >= 0 and rng < 7:
             w[rng] = 1.0
             self.add_key_weight(key_set, w)
-            self.nb_names[rng] += 1
-            self.total[rng] += len(key_set)
+            if len(key_set) > 0:
+                self.nb_names[rng] += 1
+                self.total[rng] += len(key_set)
 
     # we have weights per key. we define top keys as keys that
     # have either a max value in a specific column, or a max value
@@ -151,6 +186,30 @@ class key_weights:
 
         sorted_list = sorted(key_list, key=lambda item: item.weight, reverse=True)
         return sorted_list
+
+    # writing the metrics
+    def weights_to_m9(self, m9date, metric, m_first, F, init_set=[], write_metric=True):
+        key_lists=[]
+        top_set = set()
+        for key in init_set:
+            top_set.add(key)
+        for i in range(0,6):
+            key_lists.append(self.get_sorted_list(i))
+        for i in range(0,6):
+            kl = key_lists[i]
+            nb = len(kl)
+            if nb > 5:
+                nb = 5
+            for j in range(0,nb):              
+                top_set.add(kl[j].key)
+        if write_metric:
+            for i in range(0,6):
+                if self.nb_names[i] > 0:
+                    key_per_name = self.total[i]/self.nb_names[i]
+                    print(str(metric) + "." + str(m_first + i) + ": " +  str( self.total[i]) + ", " + str(self.nb_names[i]))
+                    key_list_to_M9(key_lists[i], m9date, metric + "." + str(m_first + i), key_per_name, top_set, F)
+        return top_set
+
 
 def write_key_range_items(key_list, file_name, key_name, weight_name):
     with open(file_name, "w") as F:
@@ -177,11 +236,51 @@ def print_top_key_range_asn(key_list, list_name, asns):
         if nb_top >= 10:
             break;
 
-def key_range_item_to_M9(kri, F):
-    # First compute total and average
-    # then compute top50, top 90
-    # then write the "top N" list
-    pass
+def millions_to_suffix_weights(millions, ps, dups):
+    suffix_weights = key_weights()
+    for dns_item in millions:
+        ns_suffixes = set()
+        for ns in dns_item.ns:
+            ns_suffix = zoneparser.extract_server_suffix(ns, ps, dups)
+            ns_suffixes.add(ns_suffix)
+        suffix_weights.add_names(ns_suffixes, dns_item.million_range)
+    return suffix_weights
+
+def millions_to_ns_as_weights(millions, nd, asn_ag):
+    ns_as_weights = key_weights()
+    for dns_item in millions:
+        ns_as_numbers = set()
+        for ns in dns_item.ns:
+            for asn in nd.d[ns].ases:
+                ns_as_numbers.add(asn_ag.get_asn(asn))
+        ns_as_weights.add_names(ns_as_numbers, dns_item.million_range)
+    return ns_as_weights
+
+def millions_to_as_weights(millions, asn_ag):
+    as_weights = key_weights()
+    for dns_item in millions:
+        as_numbers = set()
+        for asn in dns_item.ases:
+            as_numbers.add(asn_ag.get_asn(asn))
+        as_weights.add_names(as_numbers, dns_item.million_range)
+    return as_weights
+
+def compute_m9(millions, ps, dups, nd, asn_ag, asns, m9date, F):
+    suffix_weights = millions_to_suffix_weights(millions, ps, dups)
+    suffix_weights.weights_to_m9(m9date, "M9", 1, F)
+    as_weights = millions_to_as_weights(millions, asn_ag)
+    top_as = as_weights.weights_to_m9(m9date, "M9", 13, F, write_metric=False)
+
+    ns_as_weights = millions_to_ns_as_weights(millions, nd, asn_ag)
+    top_as = ns_as_weights.weights_to_m9(m9date, "M9", 7, F, top_as)
+    as_weights.weights_to_m9(m9date, "M9", 13, F, top_as)
+    for asn in top_as:
+        F.write("M9.18.1," + m9date + ",v2.0, " + ip2as.asname.clean(asns.name(asn)) + "," + str(asn) + "\n")
+
+def save_m9(millions, ps, dups, nd, asn_ag, asns, m9date, file_name):
+    with open(file_name, "w") as F:
+        compute_m9(millions, ps, dups, nd, asn_ag, asns, m9date, F)
+
 
 # Main
 def main():
@@ -308,6 +407,9 @@ def main():
     top_ns_ip6 = ns_ip6_weight.get_sorted_list(-1)
     print_top_key_range_items(top_ns_ip6, "top_ns_ip6")
     write_key_range_items(top_ns_ip6, temp_prefix + "top_ns_ip6.csv", "ipv6", "weight")
+
+    # produce M9
+    save_m9(millions, ps, zp.dups, nd, asn_ag, asns, "20170228", temp_prefix + "M9_bis.csv")
 
 # actual main program, can be called by threads, etc.
 if __name__ == '__main__':
