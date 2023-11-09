@@ -256,16 +256,14 @@ class ip2as_table:
 class asname:
     def __init__(self):
         self.table = dict()
-        self.aggregate = dict()
-        for pair in [
-            [ 9999999, "AKAMAI (multiple Ases)", "ZZ" ],
-            [ 9999998, "AMAZON & AWS (multiple Ases)", "ZZ" ],
-            [ 9999997, "Cloudflare (multiple Ases)", "ZZ" ],
-            [ 9999996, "Google (multiple Ases)", "US" ],
-            [ 9999995, "MICROSOFT (multiple Ases)", "US" ],
-            [ 9999994, "OVH (multiple Ases)", "FR" ],
-            [ 9999993, "ORACLE (multiple Ases)", "US" ]]:
-            self.aggregate[pair[0]] = pair
+        self.aggregate = {
+             9999999:[ 9999999, "AKAMAI (multiple Ases)", "ZZ" ],
+             9999998:[ 9999998, "AMAZON & AWS (multiple Ases)", "ZZ" ],
+             9999997:[ 9999997, "Cloudflare (multiple Ases)", "ZZ" ],
+             9999996:[ 9999996, "Google (multiple Ases)", "US" ],
+             9999995:[ 9999995, "MICROSOFT (multiple Ases)", "US" ],
+             9999994:[ 9999994, "OVH (multiple Ases)", "FR" ],
+             9999993:[ 9999993, "ORACLE (multiple Ases)", "US" ]}
 
     def clean(name):
         s = ""
@@ -313,7 +311,7 @@ class asname:
     def name(self, asn):
         if asn in self.aggregate:
             n = self.aggregate[asn][1]
-        if asn in self.table:
+        elif asn in self.table:
             n = self.table[asn]
         else:
             n = 'AS' + str(asn)
