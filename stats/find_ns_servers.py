@@ -146,9 +146,9 @@ class key_weights:
         self.nb_names = [0, 0, 0, 0, 0, 0, 0]
 
     # add a vector of weights for a set of keys
-    def add_key_weight(self, key_set, key_weight):
+    def add_key_weight(self, key_set, key_weight,fixed_weight=False):
         w = 1.0
-        if len(key_set) > 1:
+        if len(key_set) > 1 and not fixed_weight:
             w /= len(key_set)
         for key in key_set:
             if not key in self.weight:
@@ -158,11 +158,11 @@ class key_weights:
                     self.weight[key][i] += key_weight[i]*w
 
     # add one domain name in million range rng
-    def add_names(self, key_set, rng):
+    def add_names(self, key_set, rng, fixed_weight=False):
         w = [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ]
         if rng >= 0 and rng < 7:
             w[rng] = 1.0
-            self.add_key_weight(key_set, w)
+            self.add_key_weight(key_set, w, fixed_weight=fixed_weight)
             if len(key_set) > 0:
                 self.nb_names[rng] += 1
                 self.total[rng] += len(key_set)
@@ -188,7 +188,7 @@ class key_weights:
         return sorted_list
 
     # writing the metrics
-    def weights_to_m9(self, m9date, metric, m_first, F, init_set=[], write_metric=True):
+    def weights_to_m9(self, m9date, metric, m_first, F, init_set=[], write_metric=True, fixed_weight=False):
         key_lists=[]
         top_set = set()
         for key in init_set:
@@ -236,50 +236,50 @@ def print_top_key_range_asn(key_list, list_name, asns):
         if nb_top >= 10:
             break;
 
-def millions_to_suffix_weights(millions, ps, dups):
+def millions_to_suffix_weights(millions, ps, dups, fixed_weight):
     suffix_weights = key_weights()
     for dns_item in millions:
         ns_suffixes = set()
         for ns in dns_item.ns:
             ns_suffix = zoneparser.extract_server_suffix(ns, ps, dups)
             ns_suffixes.add(ns_suffix)
-        suffix_weights.add_names(ns_suffixes, dns_item.million_range)
+        suffix_weights.add_names(ns_suffixes, dns_item.million_range, fixed_weight=fixed_weight)
     return suffix_weights
 
-def millions_to_ns_as_weights(millions, nd, asn_ag):
+def millions_to_ns_as_weights(millions, nd, asn_ag, fixed_weight):
     ns_as_weights = key_weights()
     for dns_item in millions:
         ns_as_numbers = set()
         for ns in dns_item.ns:
             for asn in nd.d[ns].ases:
                 ns_as_numbers.add(asn_ag.get_asn(asn))
-        ns_as_weights.add_names(ns_as_numbers, dns_item.million_range)
+        ns_as_weights.add_names(ns_as_numbers, dns_item.million_range, fixed_weight=fixed_weight)
     return ns_as_weights
 
-def millions_to_as_weights(millions, asn_ag):
+def millions_to_as_weights(millions, asn_ag, fixed_weight):
     as_weights = key_weights()
     for dns_item in millions:
         as_numbers = set()
         for asn in dns_item.ases:
             as_numbers.add(asn_ag.get_asn(asn))
-        as_weights.add_names(as_numbers, dns_item.million_range)
+        as_weights.add_names(as_numbers, dns_item.million_range, fixed_weight=fixed_weight)
     return as_weights
 
-def compute_m9(millions, ps, dups, nd, asn_ag, asns, m9date, F):
-    suffix_weights = millions_to_suffix_weights(millions, ps, dups)
+def compute_m9(millions, ps, dups, nd, asn_ag, asns, m9date, fixed_weight, F):
+    suffix_weights = millions_to_suffix_weights(millions, ps, dups, fixed_weight)
     suffix_weights.weights_to_m9(m9date, "M9", 1, F)
-    as_weights = millions_to_as_weights(millions, asn_ag)
+    as_weights = millions_to_as_weights(millions, asn_ag, fixed_weight)
     top_as = as_weights.weights_to_m9(m9date, "M9", 13, F, write_metric=False)
 
-    ns_as_weights = millions_to_ns_as_weights(millions, nd, asn_ag)
+    ns_as_weights = millions_to_ns_as_weights(millions, nd, asn_ag, fixed_weight)
     top_as = ns_as_weights.weights_to_m9(m9date, "M9", 7, F, top_as)
     as_weights.weights_to_m9(m9date, "M9", 13, F, top_as)
     for asn in top_as:
         F.write("M9.19.1," + m9date + ",v2.0, " + ip2as.asname.clean(asns.name(asn)) + "," + str(asn) + "\n")
 
-def save_m9(millions, ps, dups, nd, asn_ag, asns, m9date, file_name):
+def save_m9(millions, ps, dups, nd, asn_ag, asns, m9date, fixed_weight, file_name):
     with open(file_name, "w") as F:
-        compute_m9(millions, ps, dups, nd, asn_ag, asns, m9date, F)
+        compute_m9(millions, ps, dups, nd, asn_ag, asns, m9date, fixed_weight, F)
 
 
 # Main
@@ -293,6 +293,7 @@ def main():
     except Exception as e:
         print("Incorect nb_trials value (" + sys.argv[1] + "), exception: " + str(e))
         exit(1)
+    fixed_weight = True
     ip2as_file = sys.argv[2]
     ip2as6_file = sys.argv[3]
     public_suffix_file = sys.argv[4]
@@ -349,9 +350,7 @@ def main():
         if dot_after > 0 and dnsl_loaded%dot_after == 0:
             sys.stdout.write(".")
             sys.stdout.flush()
-    if dot_after > 0 and dnsl_loaded%dot_after == 0:
-        print(".")
-    print("Parsed " + str(dnsl_loaded) + " domains from million file.")
+    print("\nParsed " + str(dnsl_loaded) + " domains from million file.")
     print("NS list has " + str(len(nd.d)) + " entries")
     
     targets = nd.random_list(nb_trials, only_news=True)
@@ -387,15 +386,15 @@ def main():
             ns_suffixes.add(ns_suffix)
             for asn in nd.d[ns].ases:
                 ns_as_numbers.add(asn_ag.get_asn(asn)) 
-            ns_ip4_weight.add_names(nd.d[ns].ip, dns_item.million_range)
-            ns_ip6_weight.add_names(nd.d[ns].ipv6, dns_item.million_range)
-        ns_weights.add_names(dns_item.ns, dns_item.million_range)
-        suffix_weights.add_names(ns_suffixes, dns_item.million_range)
-        ns_as_weight2.add_names(ns_as_numbers, dns_item.million_range)
+            ns_ip4_weight.add_names(nd.d[ns].ip, dns_item.million_range, fixed_weight=fixed_weight)
+            ns_ip6_weight.add_names(nd.d[ns].ipv6, dns_item.million_range, fixed_weight=fixed_weight)
+        ns_weights.add_names(dns_item.ns, dns_item.million_range, fixed_weight)
+        suffix_weights.add_names(ns_suffixes, dns_item.million_range, fixed_weight)
+        ns_as_weight2.add_names(ns_as_numbers, dns_item.million_range, fixed_weight)
         
         for asn in dns_item.ases:
             as_numbers.add(asn_ag.get_asn(asn))
-        as_weights.add_names(as_numbers, dns_item.million_range)
+        as_weights.add_names(as_numbers, dns_item.million_range, fixed_weight=fixed_weight)
     print("After loading from millions, NS weights has " + str(len(ns_weights.weight)) + " entries")
     print("After loading from millions, Suffix weights has " + str(len(suffix_weights.weight)) + " entries")
     print("After loading from millions, AS weights has " + str(len(as_weights.weight)) + " entries")
@@ -415,6 +414,8 @@ def main():
     # try sorting
     top_ns = ns_weights.get_sorted_list(-1)
     print_top_key_range_items(top_ns, "top_ns")
+    top_ns4 = ns_weights.get_sorted_list(4)
+    print_top_key_range_items(top_ns4, "top_ns4")
     top_suffix = suffix_weights.get_sorted_list(-1)
     print_top_key_range_items(top_suffix, "top_suffix")
     top_as = as_weights.get_sorted_list(-1)
@@ -432,7 +433,7 @@ def main():
     write_key_range_items(top_ns_ip6, temp_prefix + "top_ns_ip6.csv", "ipv6", "weight")
 
     # produce M9
-    save_m9(millions, ps, zp.dups, nd, asn_ag, asns, "20170228", temp_prefix + "M9_bis.csv")
+    save_m9(millions, ps, zp.dups, nd, asn_ag, asns, "20170228", fixed_weight, temp_prefix + "M9_bis.csv")
 
 # actual main program, can be called by threads, etc.
 if __name__ == '__main__':
