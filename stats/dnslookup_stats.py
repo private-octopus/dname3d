@@ -135,6 +135,8 @@ class stats_one:
     def comment(self, name):
         print(name+":" + str(len(self.full_list)) + ", 50%: " + str(self.p50) + ", 90%: " + str(self.p90))
         for i in range(0,5):
+            if i >= len(self.full_list):
+                break
             print(name + "["+ str(i) + "]: " + self.full_list[i].name + ", " + str(self.full_list[i].count/self.total))
 
     def m9(self, rank, m9date, top_set, F):

@@ -275,7 +275,7 @@ def compute_m9(millions, ps, dups, nd, asn_ag, asns, m9date, F):
     top_as = ns_as_weights.weights_to_m9(m9date, "M9", 7, F, top_as)
     as_weights.weights_to_m9(m9date, "M9", 13, F, top_as)
     for asn in top_as:
-        F.write("M9.18.1," + m9date + ",v2.0, " + ip2as.asname.clean(asns.name(asn)) + "," + str(asn) + "\n")
+        F.write("M9.19.1," + m9date + ",v2.0, " + ip2as.asname.clean(asns.name(asn)) + "," + str(asn) + "\n")
 
 def save_m9(millions, ps, dups, nd, asn_ag, asns, m9date, file_name):
     with open(file_name, "w") as F:
@@ -319,10 +319,6 @@ def main():
     asn_ag = ip2as.aggregated_asn()
     i2a = ip2as.load_ip2as(ip2as_file)
     i2a6 = ip2as.load_ip2as(ip2as6_file)
-
-    # Load the million file.
-    millions = dnslook.load_dns_file(million_file, dot_after=10000)
-    print("\nLoaded " + str(len(millions)) + " domains from million file.")
     
     # load the current ns list
     nd = ns_dict()
@@ -332,10 +328,30 @@ def main():
         print("Could not load " + ns_file + ", exception: " + str(e))
 
     print("NS list has " + str(len(nd.d)) + " entries, scanning millions.")
-    # Adding NS records from million list
-    for dnsl in millions:
-        for ns in dnsl.ns:
-            nd.add_ns_name(ns)
+
+    # parse the million file for additional NS records, but do not
+    # actually load it. Loading it would increase the memory footprint
+    # of the process by maybe 1GB. Not a problem per se, but we will
+    # then fork N processes for the "bucket" evaluation, for a combined
+    # memory foot print of maybe 256GB, and that would not to work well.
+    dnsl_loaded = 0
+    dot_after = 10000
+    for line in open(million_file, "rt"):
+        dnsl = dnslook.dnslook()
+        try:
+            dnsl.from_json(line)
+            for ns in dnsl.ns:
+                nd.add_ns_name(ns)
+            dnsl_loaded += 1
+        except Exception as e:
+            traceback.print_exc()
+            print("Cannot parse <" + line  + ">\nException: " + str(e))
+        if dot_after > 0 and dnsl_loaded%dot_after == 0:
+            sys.stdout.write(".")
+            sys.stdout.flush()
+    if dot_after > 0 and dnsl_loaded%dot_after == 0:
+        print(".")
+    print("Parsed " + str(dnsl_loaded) + " domains from million file.")
     print("NS list has " + str(len(nd.d)) + " entries")
     
     targets = nd.random_list(nb_trials, only_news=True)
@@ -346,6 +362,13 @@ def main():
     dl = dns_bucket.bucket_list(nd.d, targets, ps, i2a, i2a6, temp_prefix, "_ns.csv", "_stats.csv")
     dl.run()
     
+    
+    # Load the million file now. Maybe this could be combined with the first pass,
+    # to save disk IO, but we need to look at how the million file is used
+    # in the next computations first.
+    millions = dnslook.load_dns_file(million_file, dot_after=10000)
+    print("\nLoaded " + str(len(millions)) + " domains from million file.")
+
     nd.save_ns_file(ns_file)
     # tabulate by AS, NS, etc.
     ns_weights = key_weights()
