@@ -20,8 +20,8 @@ import time
 # Main
 def main():
     start_time = time.time()
-    if len(sys.argv) != 10 and len(sys.argv) != 11:
-        print("Usage: " + sys.argv[0] + " nb_trials ip2as.csv ip2as6.csv publicsuffix.dat asn_file million_domain_list million_ns_list [tmp_prefix]")
+    if len(sys.argv) != 8 and len(sys.argv) != 9:
+        print("Usage: " + sys.argv[0] + " nb_trials ip2as.csv ip2as6.csv publicsuffix.dat million_domain_list million_ns_list [tmp_prefix]")
         exit(1)
     try:
         nb_trials = int(sys.argv[1])
@@ -32,12 +32,10 @@ def main():
     ip2as_file = sys.argv[2]
     ip2as6_file = sys.argv[3]
     public_suffix_file = sys.argv[4]
-    dups_file = sys.argv[5]
-    asn_file = sys.argv[6]
-    million_file = sys.argv[7]
-    ns_file = sys.argv[8]
-    if len(sys.argv) == 10:
-        temp_prefix = sys.argv[9]
+    million_file = sys.argv[5]
+    ns_file = sys.argv[6]
+    if len(sys.argv) == 8:
+        temp_prefix = sys.argv[7]
     else:
         temp_prefix = ""
 
@@ -46,11 +44,7 @@ def main():
         print("Could not load the suffixes")
         exit(1)
     
-    # get the AS names
-    asns = ip2as.asname()
-    if not asns.load(asn_file):
-        exit(-1)
-    asn_ag = ip2as.aggregated_asn()
+    # get the IP 2 AS tables
     i2a = ip2as.load_ip2as(ip2as_file)
     i2a6 = ip2as.load_ip2as(ip2as6_file)
     
