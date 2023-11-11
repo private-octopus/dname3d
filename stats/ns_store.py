@@ -85,8 +85,7 @@ class ns_dict:
                         sd[x] = ns_item
         targets = []
         for x in sd:
-            target = million_random.million_target(sd[x].domain, sd[x].million_rank, sd[x].million_range)
-            targets.append(target)
+            targets.append(sd[x])
         return targets
 
     def get_data(self, targets, ps, i2a, i2a6, stats):

@@ -9,31 +9,20 @@ import os
 import sys
 import traceback
 
-def load_name(item_dict, target, ps, i2a, i2a6, stats):
+def load_name(d, ps, i2a, i2a6, stats):
     success = False
-    if target.domain in item_dict:
-        d = item_dict[target.domain]
-    else:
-        d = dnslook.dnslook()
-        d.domain = target.domain
-        d.million_rank = target.million_rank
-        d.million_range = target.million_range
     try:
-        if d.nb_queries == 0:
-            # Get the name servers, etc. 
-            d.get_domain_data(target.domain, ps, i2a, i2a6, stats, rank=target.million_rank, rng=target.million_range)
-        else:
-            d.retry_domain_data(ps, i2a, i2a6, stats)
+        d.retry_domain_data(ps, i2a, i2a6, stats)
         success = True
     except Exception as e:
         traceback.print_exc()
-        print("Cannot assess domain <" + target.domain  + ">\nException: " + str(e))
+        print("Cannot assess domain <" + d.domain  + ">\nException: " + str(e))
     return success, d
 
 class dns_lookup_bucket:
-    def __init__(self, bucket_id, item_dict, bucket_file_name, stats_file_name, targets, ps, i2a, i2a6):
+    def __init__(self, bucket_id,bucket_file_name, stats_file_name, targets, ps, i2a, i2a6):
         self.bucket_id = bucket_id
-        self.item_dict = item_dict
+        # self.item_dict = item_dict
         self.targets = targets
         self.bucket_file_name = bucket_file_name
         self.ps = ps
@@ -43,10 +32,10 @@ class dns_lookup_bucket:
         self.stats_file_name = stats_file_name
         self.is_complete = False
 
-    def load(self):     
+    def load(self):
         with open(self.bucket_file_name, "wt") as f_out:
             for target in self.targets:
-                success, d = load_name(self.item_dict, target, self.ps, self.i2a, self.i2a6, self.stats)
+                success, d = load_name(target, self.ps, self.i2a, self.i2a6, self.stats)
                 if success:
                     # Write the json line in the result file.
                     f_out.write(d.to_json() + "\n")
@@ -54,14 +43,15 @@ class dns_lookup_bucket:
         with open(self.stats_file_name,"wt") as f_stats:
             for stat in self.stats:
                 f_stats.write(str(stat) + "\n")
+        return True
 
-    def aggregate(self,stats):
+    def aggregate(self, stats, item_dict):
         for line in open(self.bucket_file_name, "rt"):
             js_line = line.strip()
             if len(js_line) > 0:
                 w = dnslook.dnslook()
                 if w.from_json(js_line):
-                    self.item_dict[w.domain] = w
+                    item_dict[w.domain] = w
                 else:
                     print("Cannot parse result line " + line.strip())
                     continue
@@ -110,7 +100,7 @@ class bucket_list:
         print("Prepared: " + str(len(self.target_count_per_bucket)) + " target lists.")
 
     def prepare_buckets(self):
-        bucket_list = []
+        self.bucket_list = []
         last_target = 0
         old_target = 0;
         for bucket_id in range(0,len(self.target_count_per_bucket)):
@@ -119,14 +109,13 @@ class bucket_list:
             old_target = last_target
             last_target += self.target_count_per_bucket[bucket_id]
             bucket_target = self.targets[old_target:last_target]
-            this_bucket = dns_lookup_bucket(bucket_id, self.item_dict, temp_name, temp_stats, bucket_target, self.ps, self.i2a, self.i2a6)
+            this_bucket = dns_lookup_bucket(bucket_id, temp_name, temp_stats, bucket_target, self.ps, self.i2a, self.i2a6)
             self.bucket_list.append(this_bucket)
         print("Prepared: " + str(len(self.bucket_list)) + " buckets.")
 
     def run_buckets(self):
         with concurrent.futures.ProcessPoolExecutor(max_workers = self.nb_process) as executor:
             future_to_bucket = { executor.submit(load_dns_look_up_bucket, bucket):bucket for bucket in self.bucket_list }
-        print("Started: " + str(len(future_to_bucket)) + " buckets.")
         for future in concurrent.futures.as_completed(future_to_bucket):
             bucket = future_to_bucket[future]
             try:
@@ -142,7 +131,7 @@ class bucket_list:
         for bucket in self.bucket_list:
             if not bucket.is_complete:
                 continue
-            bucket.aggregate(self.stats)
+            bucket.aggregate(self.stats, self.item_dict)
 
     def run(self):
         start_time = time.time()
