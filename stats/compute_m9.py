@@ -163,8 +163,9 @@ def millions_to_ns_as_weights(millions, nd, asn_ag, fixed_weight):
     for dns_item in millions:
         ns_as_numbers = set()
         for ns in dns_item.ns:
-            for asn in nd.d[ns].ases:
-                ns_as_numbers.add(asn_ag.get_asn(asn))
+            if ns in nd.d:
+                for asn in nd.d[ns].ases:
+                    ns_as_numbers.add(asn_ag.get_asn(asn))
         ns_as_weights.add_names(ns_as_numbers, dns_item.million_range, fixed_weight=fixed_weight)
     return ns_as_weights
 
@@ -240,8 +241,9 @@ def main():
     ns_ip6_weight = key_weights()
     for dns_item in millions:
         for ns in dns_item.ns:
-            ns_ip4_weight.add_names(nd.d[ns].ip, dns_item.million_range, fixed_weight=fixed_weight)
-            ns_ip6_weight.add_names(nd.d[ns].ipv6, dns_item.million_range, fixed_weight=fixed_weight)
+            if ns in nd.d:
+                ns_ip4_weight.add_names(nd.d[ns].ip, dns_item.million_range, fixed_weight=fixed_weight)
+                ns_ip6_weight.add_names(nd.d[ns].ipv6, dns_item.million_range, fixed_weight=fixed_weight)
 
     print("After loading from NS, NS_IP4 weights has " + str(len(ns_ip4_weight.weight)) + " entries")
     print("After loading from NS, NS_IP6 weights has " + str(len(ns_ip4_weight.weight)) + " entries")
