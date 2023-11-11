@@ -118,7 +118,7 @@ then
     m9_file="/home/huitema/M9/M9-$m9_day.csv"
     ip_list="/home/huitema/ip_list_$m9_day"
     echo "Computing M9 in $m9_file from $com_stats and $mill_stats"
-    /usr/local/python3.8/bin/python3 compute_m9.py $NBSAMPLES $PUB_S ..\data\asnames.txt $RESULT $RESULT_NS  $m9_file $m9_day $ip_list
+    /usr/local/python3.8/bin/python3 compute_m9.py $PUB_S $DUP_S ..\data\asnames.txt $RESULT $RESULT_NS $m9_file $m9_day $ip_list
 fi
 
 if [ -f $RESULT ]

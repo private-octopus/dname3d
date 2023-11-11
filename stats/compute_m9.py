@@ -196,8 +196,9 @@ def save_m9(millions, ps, dups, nd, asn_ag, asns, m9date, fixed_weight, file_nam
 
 # Main
 def main():
-    if len(sys.argv) != 10 and len(sys.argv) != 11:
+    if len(sys.argv) != 9:
         print("Usage: " + sys.argv[0] + " publicsuffix.dat dups asn_file million_domain_list million_ns_list m9_metric_file m9_metric_file m9_day ip_file_prefix")
+        exit(-1)
     fixed_weight = True
     public_suffix_file = sys.argv[1]
     dups_file = sys.argv[2]
@@ -207,11 +208,6 @@ def main():
     m9_metric_file = sys.argv[6]
     m9_metric_day = sys.argv[7]
     ip_file_prefix = sys.argv[8]
-
-    if len(sys.argv) == 11:
-        temp_prefix = sys.argv[10]
-    else:
-        temp_prefix = ""
 
     # load public suffixes
     ps = pubsuffix.public_suffix()
