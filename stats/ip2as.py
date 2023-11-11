@@ -128,8 +128,9 @@ class ip2as_line:
         return(ret)
 
 class ip2as_table:
-    def __init__(self):
+    def __init__(self, ipv=4):
         self.table = []
+        self.ip_version = ipv
 
     def load(self,file_name):
         ret = True
@@ -140,7 +141,10 @@ class ip2as_table:
                 if first and l == "ip_first, ip_last, as_number,":
                     first = False
                     continue
-                il = ip2as_line(ipaddress.ip_address("0.0.0.0"), ipaddress.ip_address("0.0.0.0"), 0)
+                if self.ip_version == 4:
+                    il = ip2as_line(ipaddress.ip_address("0.0.0.0"), ipaddress.ip_address("0.0.0.0"), 0)
+                else:
+                    il = ip2as_line(ipaddress.ip_address("::0"), ipaddress.ip_address("::0"), 0)
                 if il.load(l):
                     self.table.append(il)
         except Exception as e:
@@ -252,6 +256,27 @@ class ip2as_table:
 class asname:
     def __init__(self):
         self.table = dict()
+        self.aggregate = {
+             9999999:[ 9999999, "AKAMAI (multiple Ases)", "ZZ" ],
+             9999998:[ 9999998, "AMAZON & AWS (multiple Ases)", "ZZ" ],
+             9999997:[ 9999997, "Cloudflare (multiple Ases)", "ZZ" ],
+             9999996:[ 9999996, "Google (multiple Ases)", "US" ],
+             9999995:[ 9999995, "MICROSOFT (multiple Ases)", "US" ],
+             9999994:[ 9999994, "OVH (multiple Ases)", "FR" ],
+             9999993:[ 9999993, "ORACLE (multiple Ases)", "US" ]}
+
+    def clean(name):
+        s = ""
+        was_blank = False
+        for c in name:
+            if c == ',':
+                c = ' '
+            if was_blank and c == ' ':
+                continue
+            else:
+                was_blank = c == ' '
+            s += c
+        return s
 
     def load(self, file_name, test=False):
         ret = True
@@ -284,7 +309,70 @@ class asname:
         return ret
 
     def name(self, asn):
-        n = "?"
-        if asn in self.table:
+        if asn in self.aggregate:
+            n = self.aggregate[asn][1]
+        elif asn in self.table:
             n = self.table[asn]
+        else:
+            n = 'AS' + str(asn)
         return n
+
+class aggregated_asn:
+    def __init__(self):
+        self.aggregate = dict()
+        for pair in [
+            [ 33905, 9999999],
+            [ 16625, 9999999],
+            [ 20940, 9999999],
+            [ 21342, 9999999],
+            [ 8987, 9999998],
+            [ 16509, 9999998],
+            [ 14618, 9999998],
+            [ 44298, 9999998],
+            [ 13335, 9999997],
+            [ 209242, 9999997],
+            [ 15169, 9999996],
+            [ 19527, 9999996],
+            [ 16591, 9999996],
+            [ 396982, 9999996],
+            [ 3598, 9999995],
+            [ 6584, 9999995],
+            [ 8068, 9999995],
+            [ 8069, 9999995],
+            [ 8070, 9999995],
+            [ 8071, 9999995],
+            [ 8075, 9999995],
+            [ 12076, 9999995],
+            [ 23468, 9999995],
+            [ 16276, 9999994],
+            [ 35540, 9999994],
+            [ 792, 9999993],
+            [ 793, 9999993],
+            [ 794, 9999993],
+            [ 1215, 9999993],
+            [ 1216, 9999993],
+            [ 1217, 9999993],
+            [ 3457, 9999993],
+            [ 4184, 9999993],
+            [ 31898, 9999993],
+            [ 46403, 9999993]]:
+            self.aggregate[pair[0]] = pair[1]
+
+    def get_asn(self, asn):
+        try:
+            asn = int(asn)
+            if asn in self.aggregate:
+                asn = self.aggregate[asn]
+        except:
+            print("Cannot map ASN: " + str(asn))
+        return asn
+
+
+def load_ip2as(ip2as_file):
+    i2a = ip2as_table()
+    if i2a.load(ip2as_file):
+        print("From <" + ip2as_file + ">, loaded table of length: " + str(len(i2a.table)))
+    else:
+        print("Could not load <" + ip2as_file + ">")
+        exit(1)
+    return i2a

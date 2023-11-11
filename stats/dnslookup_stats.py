@@ -11,7 +11,7 @@
 # M9.3.* -- statistics for next 9000 hosts
 # M9.4.* -- statistics for next 90000 hosts
 # M9.5.* -- statistics for next 900000 hosts
-# M9.5.* -- statistics for .COM hosts
+# M9.6.* -- statistics for .COM hosts
 #
 # For each class, we measure:
 #
@@ -135,6 +135,8 @@ class stats_one:
     def comment(self, name):
         print(name+":" + str(len(self.full_list)) + ", 50%: " + str(self.p50) + ", 90%: " + str(self.p90))
         for i in range(0,5):
+            if i >= len(self.full_list):
+                break
             print(name + "["+ str(i) + "]: " + self.full_list[i].name + ", " + str(self.full_list[i].count/self.total))
 
     def m9(self, rank, m9date, top_set, F):

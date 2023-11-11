@@ -77,7 +77,10 @@ class ip_tab_line:
             if len(parts) == 2:
                 self.net = ipaddress.ip_network(parts[0])
                 self.as_number = int(parts[1].strip())
-                ret = True
+                if self.net.prefixlen == 0 and self.as_number != 0:
+                    print("Unexpected default route: <" + line.strip() + ">")
+                else:
+                    ret = True
             else:
                 print("malformed IP net line: <" + line.strip() + ">")
         except Exception as e:
@@ -89,6 +92,8 @@ class ip_tab_line:
         ret = False
         if self.net.version == other.net.version:
             ret = self.net.subnet_of(other.net)
+        else:
+            print("Incompatible version: " + str(self.net) + ", " + str(other.net))
         return ret
 
     def insert_overlapping(self, other, in_order):
@@ -165,6 +170,8 @@ class bgp_tab_parser:
         ret = False
         nb_lines = 0
         try:
+            print("loading lines from " + file_name)
+            print("Storing under " + str(root_tab.net))
             for line in gzip.open(file_name, 'rt'):
                 nb_lines += 1
                 tab = ip_tab_line()
@@ -197,8 +204,8 @@ class bgp_tab_parser:
             v_tab = self.v4_tab
         elif version == 6:
             file_name = temp + "bgp_tab_v6.txt.gz"
-            url = "https://bgp.potaroo.net/as6447/bgptab.txt.gz"
-            v_tab = self.v4_tab
+            url = "https://bgp.potaroo.net/v6/as6447/bgptab.txt.gz"
+            v_tab = self.v6_tab
         else:
             print("Unexpected version: " + str(version))
             return False
@@ -206,47 +213,26 @@ class bgp_tab_parser:
         if ret:
             ret = bgp_tab_parser.parse_file(file_name, v_tab)
 
-    
+def parse_table(target, ip_version, temp):
+    parser = bgp_tab_parser()
+    parser.parse_version(temp, ip_version)
+    if ip_version == 4:
+        parser_tab = parser.v4_tab
+    else:
+        parser_tab = parser.v6_tab
 
+    ranges = ip2as.ip2as_table(ipv=ip_version)
+    a_last = parser_tab.add_ranges(ranges)
 
-
-# Parsing program starts here
-
-target_v4 = sys.argv[1]
-temp = sys.argv[2]
-#old_table = sys.argv[3]
-
-parser = bgp_tab_parser()
-
-parser.parse_version(temp, 4)
-
-test_addresses = [ "0.0.0.0", "1.0.0.1", "1.0.4.1", "1.0.5.1", "1.0.128.1", "128.116.0.1", "223.255.253.255", "240.1.1.1" ]
-test_asn = [ 0, 13335, 38803, 38803, 23969, 22697, 58519, 0 ]
-
-verified = True
-for i in range(0, len(test_addresses)):
-    ta = test_addresses[i]
-    subnet = ipaddress.IPv4Network(ta + "/32")
-    asn = parser.v4_tab.find_asn(subnet)
-    if asn != test_asn[i]:
-        print(ta + " -> " + str(asn) + ", expected " + str(test_asn[i]))
-        verified = False
-
-if verified or True:
-    print("Input verified, formatting " + target_v4)
-    ranges = ip2as.ip2as_table()
-    a_last = parser.v4_tab.add_ranges(ranges)
-    print("Found " + str(len(ranges.table)) + " ranges, end with " + str(a_last) + ", " + str(ranges.nb_zero()) + " zeroes.")
-    #old_ranges = ip2as.ip2as_table()
-    #old_ranges.load(old_table)
-    #print("Found " + str(len(old_ranges.table)) + " in old_table, " + str(old_ranges.nb_zero()) + " zeroes.")
-    #ranges.merge(old_ranges)
-    #print("After merge, " + str(len(ranges.table)) + " ranges, " + str(ranges.nb_zero()) + " zeroes.")
+    print("Found " + str(len(ranges.table)) + " IPv" + str(ip_version) + " ranges, end with " + str(a_last) + ", " + str(ranges.nb_zero()) + " zeroes.")
     ranges.collapse()
     print("Kept " + str(len(ranges.table)) + " ranges after collapse, " + str(ranges.nb_zero()) + " zeroes.")
-    if ranges.save(target_v4):
-        print("Saved " + str(len(ranges.table)) + " ranges in " + target_v4)
+    if ranges.save(target):
+        print("Saved " + str(len(ranges.table)) + " ranges in " + target)
+    return ranges
 
+def verify_table(ranges, test_addresses, test_asn):
+    verified = True
     for i in range(0, len(test_addresses)):
         ta = test_addresses[i]
         asn = ranges.get_as_number(ta)
@@ -255,6 +241,55 @@ if verified or True:
             verified = False
     if verified:
         print("New table was verified.")
+    return verified
+
+# Parsing program starts here
+target_v4 = ""
+target_v6 = ""
+temp = ""
+if len(sys.argv) == 3:
+    target_v4 = sys.argv[1]
+    temp = sys.argv[2]
+elif len(sys.argv) == 4:
+    target_v4 = sys.argv[1]
+    target_v6 = sys.argv[2]
+    temp = sys.argv[3]
+else:
+    print("Usage: geti2as.py <target_v4> [<target_v6] temp")
+    exit(1)
+#
+# Run a self test before parsing
+#
+test_parser = bgp_tab_parser()
+test_parser.parse_version(temp, 4)
+test_addresses = [ "0.0.0.0", "1.0.0.1", "1.0.4.1", "1.0.5.1", "1.0.128.1", "128.116.0.1", "223.255.253.255", "240.1.1.1" ]
+test_asn = [ 0, 13335, 38803, 38803, 23969, 22697, 58519, 0 ]
+test_addresses_6 = ["::", "2000:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+                    "2001::","2001:0:ffff:ffff:ffff:ffff:ffff:ffff"]
+test_asn_6 = [ 0, 0, 945, 945 ]
+# verified = True
+# for i in range(0, len(test_addresses)):
+#    ta = test_addresses[i]
+#    subnet = ipaddress.IPv4Network(ta + "/32")
+#    asn = test_parser.v4_tab.find_asn(subnet)
+#    if asn != test_asn[i]:
+#        print(ta + " -> " + str(asn) + ", expected " + str(test_asn[i]))
+#        verified = False
+# if verified:
+#    print("Self test passes, formatting " + target_v4)
+if len(target_v4) > 0:
+    print("Formatting " + target_v4)
+    ranges_v4 = parse_table(target_v4, 4, temp)
+    verified = verify_table(ranges_v4, test_addresses, test_asn)
+    if not verified:
+        print("V4 table could not be verified")
+if len(target_v6) > 0:
+    print("Formatting " + target_v6)
+    ranges_v6 = parse_table(target_v6, 6, temp)
+    verified = verify_table(ranges_v6, test_addresses_6, test_asn_6)
+    if not verified:
+        print("V6 table could not be verified")
+
 
 
 

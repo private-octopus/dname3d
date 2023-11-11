@@ -19,13 +19,13 @@ import time
 import concurrent.futures
 import os
 
-def load_names(result_file, targets, ps, i2a, stats): 
+def load_names(result_file, targets, ps, i2a, i2a6, stats): 
     with open(result_file, "wt") as f_out:
         for target in targets:
             try:
                 d = dnslook.dnslook()
                 # Get the name servers, etc. 
-                d.get_domain_data(target.domain, ps, i2a, stats, rank=target.million_rank, rng=target.million_range)
+                d.get_domain_data(target.domain, ps, i2a, i2a6, stats, rank=target.million_rank, rng=target.million_range)
                 # Write the json line in the result file.
                 f_out.write(d.to_json() + "\n")
             except Exception as e:
@@ -35,18 +35,19 @@ def load_names(result_file, targets, ps, i2a, stats):
 
 
 class dns_lookup_bucket:
-    def __init__(self, bucket_id, bucket_file_name, stats_file_name, targets, ps, i2a, stats):
+    def __init__(self, bucket_id, bucket_file_name, stats_file_name, targets, ps, i2a, i2a6, stats):
         self.bucket_id = bucket_id
         self.targets = targets
         self.bucket_file_name = bucket_file_name
         self.ps = ps
         self.i2a = i2a
+        self.i2a6 = i2a6
         self.stats = stats
         self.stats_file_name = stats_file_name
         self.is_complete = False
 
     def load(self):
-        load_names(self.bucket_file_name, self.targets, self.ps, self.i2a, self.stats)
+        load_names(self.bucket_file_name, self.targets, self.ps, self.i2a, self.i2a6, self.stats)
         sys.stdout.flush()
         with open(self.stats_file_name,"wt") as f_stats:
             for stat in self.stats:
@@ -59,17 +60,18 @@ def load_dns_look_up_bucket(bucket):
 # Main
 def main():
     start_time = time.time()
-    if len(sys.argv) != 7 and len(sys.argv) != 8:
-        print("Usage: " + sys.argv[0] + " nb_trials ip2as.csv publicsuffix.dat million_domain_list com_sample result_file [tmp_prefix]")
+    if len(sys.argv) != 8 and len(sys.argv) != 9:
+        print("Usage: " + sys.argv[0] + " nb_trials ip2as.csv ip2as6.csv publicsuffix.dat million_domain_list com_sample result_file [tmp_prefix]")
         exit(1)
     nb_trials = int(sys.argv[1])
     ip2as_file = sys.argv[2]
-    public_suffix_file = sys.argv[3]
-    million_file = sys.argv[4]
-    com_sample = sys.argv[5]
-    result_file = sys.argv[6]
-    if len(sys.argv) == 8:
-        temp_prefix = sys.argv[7]
+    ip2as6_file = sys.argv[3]
+    public_suffix_file = sys.argv[4]
+    million_file = sys.argv[5]
+    com_sample = sys.argv[6]
+    result_file = sys.argv[7]
+    if len(sys.argv) == 9:
+        temp_prefix = sys.argv[8]
     else:
         temp_prefix = ""
 
@@ -78,11 +80,8 @@ def main():
         print("Could not load the suffixes")
         exit(1)
 
-    i2a = ip2as.ip2as_table()
-    if i2a.load(ip2as_file):
-        print("Loaded i2a table of length: " + str(len(i2a.table)))
-    else:
-        print("Could not load <" + ip2as_file + ">")
+    i2a = ip2as.load_ip2as(ip2as_file)
+    i2a6 = ip2as.load_ip2as(ip2as6_file)
 
     mr = million_random.million_random(100, 10)
     already_found = set()
@@ -162,7 +161,7 @@ def main():
     # Once the required number of targets has been selected, prepare parallel threads
     ready_time = time.time()
     if temp_prefix == "":
-        load_names(result_file, targets, ps, i2a, stats)
+        load_names(result_file, targets, ps, i2a, i2a6, stats)
         done_time = time.time()
         print("\nQueries took " + str(done_time - ready_time))
     else:
@@ -191,7 +190,7 @@ def main():
             old_target = last_target
             last_target += target_count_per_bucket[bucket_id]
             bucket_target = targets[old_target:last_target]
-            this_bucket = dns_lookup_bucket(bucket_id, temp_name, temp_stats, bucket_target, ps, i2a, stats)
+            this_bucket = dns_lookup_bucket(bucket_id, temp_name, temp_stats, bucket_target, ps, i2a, i2a6, stats)
             bucket_list.append(this_bucket)
         # run multiple parsing in parallel
         with concurrent.futures.ProcessPoolExecutor(max_workers = nb_process) as executor:
