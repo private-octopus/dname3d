@@ -104,7 +104,7 @@ fi
 
 RESULT_NS="/home/huitema/ns_list/ns_list_$YYYYMM.csv"
 
-if [ -f RESULT ]
+if [ -f $RESULT ]
 then
     TEMP=/home/huitema/tmp/find_ns_servers_
     rm $TEMP*
