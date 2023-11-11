@@ -92,6 +92,7 @@ else
 fi
 
 RESULT="/home/huitema/dns_millions/dns_millions_$YYYYMM.csv"
+
 if [ -f $COM_SAMPLES -a -f $MILLION ];
 then
 echo "Adding $NBSAMPLES to the DNS processed list"
@@ -101,13 +102,23 @@ echo "Adding $NBSAMPLES to the DNS processed list"
     /usr/local/python3.8/bin/python3 do_dnslookup.py $NBSAMPLES $IP2AS $IP2AS6 $PUB_S $MILLION $COM_SAMPLES $RESULT $TEMP
 fi
 
-if [ -f $RESULT ]
+RESULT_NS="/home/huitema/ns_list/ns_list_$YYYYMM.csv"
+
+if [ -f RESULT ]
+then
+    TEMP=/home/huitema/tmp/find_ns_servers_
+    rm $TEMP*
+    /usr/local/python3.8/bin/python3 find_ns_servers.py $NBSAMPLES $IP2AS $IP2AS6 $PUB_S $RESULT $RESULT_NS $TEMP
+fi
+
+if [ -f $RESULT -a -f $RESULT_NS ]
 then
     echo "Recomputing M9 for $YEAR-$MM-$DAY"
     m9_day="$YEAR-$MM-$DAY"
     m9_file="/home/huitema/M9/M9-$m9_day.csv"
+    ip_list="/home/huitema/ip_list_$m9_day"
     echo "Computing M9 in $m9_file from $com_stats and $mill_stats"
-    /usr/local/python3.8/bin/python3 ./dnslookup_stats.py $RESULT $MILLION $PUB_S $DUP_S $COM_STATS $m9_file $m9_day
+    /usr/local/python3.8/bin/python3 compute_m9.py $NBSAMPLES $PUB_S ..\data\asnames.txt $RESULT $RESULT_NS  $m9_file $m9_day $ip_list
 fi
 
 if [ -f $RESULT ]
@@ -132,6 +143,7 @@ then
     # scp /home/huitema/M11/M11-$YEAR-$MM-$DAY.csv octo0@ithi.research.icann.org:data/M11/
     echo "M11 updated."
 fi
+
 
 cd $OLD_DIR
 pwd
