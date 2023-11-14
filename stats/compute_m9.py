@@ -200,7 +200,7 @@ def main():
     if len(sys.argv) != 9:
         print("Usage: " + sys.argv[0] + " publicsuffix.dat dups asn_file million_domain_list million_ns_list m9_metric_file m9_metric_file m9_day ip_file_prefix")
         exit(-1)
-    fixed_weight = True
+    fixed_weight = False
     public_suffix_file = sys.argv[1]
     dups_file = sys.argv[2]
     asn_file = sys.argv[3]
