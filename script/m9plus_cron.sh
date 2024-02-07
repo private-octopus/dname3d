@@ -1,5 +1,11 @@
 # !/bin/bash
 NBSAMPLES=$1
+CURRENT_DIR=`pwd`
+cd
+HOMEDIR=`pwd`
+echo "Homedir: $HOMEDIR"
+cd $CURRENT_DIR
+
 TODAY=$(date +%y-%m-%d)
 YEAR=$(date -d $TODAY +%Y)
 MM=$(date -d $TODAY +%m)
@@ -9,20 +15,20 @@ DAY=$(date -d "$DAY_AFTER_MONTH -1 day" +%d)
 YYYYMM="$YEAR$MM"
 echo "$YEAR-$MM-$DAY ($YYYYMM)"
 OLD_DIR=`pwd`
-cd /home/huitema/dname3d/stats
+cd $HOMEDIR/dname3d/stats
 echo "Switched from $OLD_DIR to `pwd`"
 
-IP2AS="/home/huitema/ip2as/ip2as_$YEAR$MM.csv"
-IP2AS6="/home/huitema/ip2as/ip2as6_$YEAR$MM.csv"
+IP2AS="$HOMEDIR/ip2as/ip2as_$YEAR$MM.csv"
+IP2AS6="$HOMEDIR/ip2as/ip2as6_$YEAR$MM.csv"
 if [ -f $IP2AS -a -f $IP2AS6 ];
 then
     echo "$IP2AS already downloaded";
 else
     echo "Need to download $IP2AS or $IP2AS6"
-    /usr/local/python3.8/bin/python3 geti2as.py $IP2AS $IP2AS6 /home/huitema/temp/
+    /usr/local/python3.8/bin/python3 geti2as.py $IP2AS $IP2AS6 $HOMEDIR/temp/
 fi
 
-MILLION="/home/huitema/majestic/million_$YEAR$MM.txt"
+MILLION="$HOMEDIR/majestic/million_$YEAR$MM.txt"
 if [ -f $MILLION ];
 then
     echo "$MILLION already downloaded";
@@ -32,8 +38,8 @@ else
 fi
 
 
-COM_SAMPLES="/home/huitema/com_samples/com_samples_$YYYYMM.csv"
-COM_STATS="/home/huitema/com_stats/com_stats_$YYYYMM.csv"
+COM_SAMPLES="$HOMEDIR/com_samples/com_samples_$YYYYMM.csv"
+COM_STATS="$HOMEDIR/com_stats/com_stats_$YYYYMM.csv"
 PUB_S="../data/public_suffix_list.dat"
 DUP_S="../data/service-duplicates.csv"
 
@@ -55,7 +61,7 @@ else
         fi;
     done
     if [[ "$X" == *.gz ]]; then
-        Y="/home/huitema/com_temp/latest_com_zone"
+        Y="$HOMEDIR/com_temp/latest_com_zone"
         gunzip -c $X > $Y
         X=$Y
     fi
@@ -66,7 +72,7 @@ else
         echo "COM_STATS already computed";
     else
         if [ ! -z "$X" ]; then
-            S_TEMP=/home/huitema/tmp/tmp_com_zone_
+            S_TEMP=$HOMEDIR/tmp/tmp_com_zone_
             rm -f $S_TEMP*
             /usr/local/python3.8/bin/python3 do_zoneparser.py $COM_STATS $X $PUB_S $DUP_S $MILLION $S_TEMP
             rm -f $S_TEMP*
@@ -80,7 +86,7 @@ else
     else
         if [ ! -z "$X" ]; then
             echo "Found COM zone file: $X"
-            Z_TEMP=/home/huitema/tmp/tmp_com_sample_
+            Z_TEMP=$HOMEDIR/tmp/tmp_com_sample_
             rm -f $Z_TEMP*
             /usr/local/python3.8/bin/python3 do_zonesampler.py $COM_SAMPLES $X 1000000 $Z_TEMP
             rm -f $Z_TEMP*
@@ -88,25 +94,25 @@ else
     fi
 
     # clean up the temporrary files to save disk space
-    rm -f /home/huitema/com_temp/*
+    rm -f $HOMEDIR/com_temp/*
 fi
 
-RESULT="/home/huitema/dns_millions/dns_millions_$YYYYMM.csv"
+RESULT="$HOMEDIR/dns_millions/dns_millions_$YYYYMM.csv"
 
 if [ -f $COM_SAMPLES -a -f $MILLION ];
 then
 echo "Adding $NBSAMPLES to the DNS processed list"
     #../script/central_million.sh $YYYYMM $NBSAMPLES
-    TEMP=/home/huitema/tmp/dnslookup_
+    TEMP=$HOMEDIR/tmp/dnslookup_
     rm $TEMP*
     /usr/local/python3.8/bin/python3 do_dnslookup.py $NBSAMPLES $IP2AS $IP2AS6 $PUB_S $MILLION $COM_SAMPLES $RESULT $TEMP
 fi
 
-RESULT_NS="/home/huitema/ns_list/ns_list_$YYYYMM.csv"
+RESULT_NS="$HOMEDIR/ns_list/ns_list_$YYYYMM.csv"
 
 if [ -f $RESULT ]
 then
-    TEMP=/home/huitema/tmp/find_ns_servers_
+    TEMP=$HOMEDIR/tmp/find_ns_servers_
     rm $TEMP*
     /usr/local/python3.8/bin/python3 find_ns_servers.py $NBSAMPLES $IP2AS $IP2AS6 $PUB_S $RESULT $RESULT_NS $TEMP
 fi
@@ -115,8 +121,8 @@ if [ -f $RESULT -a -f $RESULT_NS ]
 then
     echo "Recomputing M9 for $YEAR-$MM-$DAY"
     m9_day="$YEAR-$MM-$DAY"
-    m9_file="/home/huitema/M9/M9-$m9_day.csv"
-    ip_list="/home/huitema/ip_list_$m9_day"
+    m9_file="$HOMEDIR/M9/M9-$m9_day.csv"
+    ip_list="$HOMEDIR/ip_list_$m9_day"
     echo "Computing M9 in $m9_file from $com_stats and $mill_stats"
     /usr/local/python3.8/bin/python3 compute_m9.py $PUB_S $DUP_S ../data/asnames.txt $RESULT $RESULT_NS $m9_file $m9_day $ip_list
 fi
@@ -125,22 +131,22 @@ if [ -f $RESULT ]
 then
     echo "Recomputing M11 for $YEAR-$MM-$DAY"
     m11_day="$YEAR-$MM-$DAY"
-    root_stats="/home/huitema/dns_root/root_stats_$YYYYMM.csv"
-    m11_file="/home/huitema/M11/M11-$m11_day.csv"
+    root_stats="$HOMEDIR/dns_root/root_stats_$YYYYMM.csv"
+    m11_file="$HOMEDIR/M11/M11-$m11_day.csv"
     echo "Computing M11 in $m11_file from $RESULT and $root_stats"
     /usr/local/python3.8/bin/python3 ./compute_m11.py $m11_day $RESULT $PUB_S $DUP_S $root_stats $m11_file
 fi
 
 if [ -f $RESULT ]
 then
-    cd /home/huitema/
+    cd $HOMEDIR/
     echo "Writing M9 to ITHI staging server"
     rsync -Cav -e "ssh -l octo0" M9 octo0@ithi.research.icann.org:data
-    # scp /home/huitema/M9/M9-$YEAR-$MM-$DAY.csv octo0@ithi.research.icann.org:data/M9/
+    # scp $HOMEDIR/M9/M9-$YEAR-$MM-$DAY.csv octo0@ithi.research.icann.org:data/M9/
     echo "M9 updated."
     echo "Writing M11 to ITHI staging server"
     rsync -Cav -e "ssh -l octo0" M11 octo0@ithi.research.icann.org:data
-    # scp /home/huitema/M11/M11-$YEAR-$MM-$DAY.csv octo0@ithi.research.icann.org:data/M11/
+    # scp $HOMEDIR/M11/M11-$YEAR-$MM-$DAY.csv octo0@ithi.research.icann.org:data/M11/
     echo "M11 updated."
 fi
 
