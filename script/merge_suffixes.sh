@@ -7,7 +7,7 @@ nbsuffix=$4
 target=suffixes-$date.csv
 echo "Looking for $homedir/*/$target "
 list=`ls -d $homedir/*/$target`
-python3 merge_suffixes.py $merged $nbsuffix $list
+python merge_suffixes.py $merged $nbsuffix $list
 
 
 
