@@ -8,7 +8,7 @@ echo "Looking at instances for first $nb_suffixes in $suffix_file"
 target="suffixes-$date.csv"
 echo "Looking for $homedir/*/$target "
 list=`ls -d $homedir/*/$target`
-python3 suffix_per_instance.py $outfile $suffix_file $nb_suffixes $list
+python suffix_per_instance.py $outfile $suffix_file $nb_suffixes $list
 
 
 

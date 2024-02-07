@@ -22,5 +22,5 @@ echo "Computing M9 in $m9_file from $com_stats and $mill_stats"
 pub_s=../data/public_suffix_list.dat
 mill=../data/million.txt
 dups=../data/service-duplicates.csv
-python3 ./dnslookup_stats.py $mill_stats $mill $pub_s $dups $com_stats $m9_file $m9_day
+python ./dnslookup_stats.py $mill_stats $mill $pub_s $dups $com_stats $m9_file $m9_day
 

@@ -25,7 +25,7 @@ then
     echo "$IP2AS already downloaded";
 else
     echo "Need to download $IP2AS or $IP2AS6"
-    /usr/local/python3.8/bin/python3 geti2as.py $IP2AS $IP2AS6 $HOMEDIR/temp/
+    python geti2as.py $IP2AS $IP2AS6 $HOMEDIR/temp/
 fi
 
 MILLION="$HOMEDIR/majestic/million_$YEAR$MM.txt"
@@ -34,7 +34,7 @@ then
     echo "$MILLION already downloaded";
 else
     echo "Need to download $MILLION"
-    /usr/local/python3.8/bin/python3 getmajestic.py $MILLION
+    python getmajestic.py $MILLION
 fi
 
 
@@ -74,7 +74,7 @@ else
         if [ ! -z "$X" ]; then
             S_TEMP=$HOMEDIR/tmp/tmp_com_zone_
             rm -f $S_TEMP*
-            /usr/local/python3.8/bin/python3 do_zoneparser.py $COM_STATS $X $PUB_S $DUP_S $MILLION $S_TEMP
+            python do_zoneparser.py $COM_STATS $X $PUB_S $DUP_S $MILLION $S_TEMP
             rm -f $S_TEMP*
         fi
     fi
@@ -88,7 +88,7 @@ else
             echo "Found COM zone file: $X"
             Z_TEMP=$HOMEDIR/tmp/tmp_com_sample_
             rm -f $Z_TEMP*
-            /usr/local/python3.8/bin/python3 do_zonesampler.py $COM_SAMPLES $X 1000000 $Z_TEMP
+            python do_zonesampler.py $COM_SAMPLES $X 1000000 $Z_TEMP
             rm -f $Z_TEMP*
         fi
     fi
@@ -105,7 +105,7 @@ echo "Adding $NBSAMPLES to the DNS processed list"
     #../script/central_million.sh $YYYYMM $NBSAMPLES
     TEMP=$HOMEDIR/tmp/dnslookup_
     rm $TEMP*
-    /usr/local/python3.8/bin/python3 do_dnslookup.py $NBSAMPLES $IP2AS $IP2AS6 $PUB_S $MILLION $COM_SAMPLES $RESULT $TEMP
+    python do_dnslookup.py $NBSAMPLES $IP2AS $IP2AS6 $PUB_S $MILLION $COM_SAMPLES $RESULT $TEMP
 fi
 
 RESULT_NS="$HOMEDIR/ns_list/ns_list_$YYYYMM.csv"
@@ -114,7 +114,7 @@ if [ -f $RESULT ]
 then
     TEMP=$HOMEDIR/tmp/find_ns_servers_
     rm $TEMP*
-    /usr/local/python3.8/bin/python3 find_ns_servers.py $NBSAMPLES $IP2AS $IP2AS6 $PUB_S $RESULT $RESULT_NS $TEMP
+    python find_ns_servers.py $NBSAMPLES $IP2AS $IP2AS6 $PUB_S $RESULT $RESULT_NS $TEMP
 fi
 
 if [ -f $RESULT -a -f $RESULT_NS ]
@@ -124,7 +124,7 @@ then
     m9_file="$HOMEDIR/M9/M9-$m9_day.csv"
     ip_list="$HOMEDIR/ip_list_$m9_day"
     echo "Computing M9 in $m9_file from $com_stats and $mill_stats"
-    /usr/local/python3.8/bin/python3 compute_m9.py $PUB_S $DUP_S ../data/asnames.txt $RESULT $RESULT_NS $m9_file $m9_day $ip_list
+    python compute_m9.py $PUB_S $DUP_S ../data/asnames.txt $RESULT $RESULT_NS $m9_file $m9_day $ip_list
 fi
 
 if [ -f $RESULT ]
@@ -134,7 +134,7 @@ then
     root_stats="$HOMEDIR/dns_root/root_stats_$YYYYMM.csv"
     m11_file="$HOMEDIR/M11/M11-$m11_day.csv"
     echo "Computing M11 in $m11_file from $RESULT and $root_stats"
-    /usr/local/python3.8/bin/python3 ./compute_m11.py $m11_day $RESULT $PUB_S $DUP_S $root_stats $m11_file
+    python ./compute_m11.py $m11_day $RESULT $PUB_S $DUP_S $root_stats $m11_file
 fi
 
 if [ -f $RESULT ]

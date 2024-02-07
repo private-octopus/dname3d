@@ -23,7 +23,7 @@ then
 else
     echo "Computing COM_SAMPLE"
     rm $HOMEDIR/tmp/czsp_*
-    python3 do_zonesampler.py $COM_SAMPLE /data/ZFA-backups/20220916/com/com.zone 100000 $HOMEDIR/tmp/czsp_
+    python do_zonesampler.py $COM_SAMPLE /data/ZFA-backups/20220916/com/com.zone 100000 $HOMEDIR/tmp/czsp_
 fi
 COM_DNS_SAMPLE="$HOMEDIR/com_samples/com_dns_samples_$YEAR$MM.txt"
 if [ -f COM_SAMPLE ];
@@ -31,6 +31,6 @@ then
     echo "COM_DNS_SAMPLE already created";
 else
     echo "Computing COM_DNS_SAMPLE"
-    python3 do_zonesampler.py 
+    python do_zonesampler.py 
     ../script/central_dns.sh $YYYYMM
 fi
