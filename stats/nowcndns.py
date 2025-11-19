@@ -23,7 +23,7 @@ def from_json(js):
             ret = False
         else:
             domain = jd['domain']
-            domain = domain.tolower()
+            domain = domain.lower()
             if domain.endswith("."):
                 domain = domain[:-1]
             is_cn = domain.endswith(".cn")
@@ -31,7 +31,7 @@ def from_json(js):
             if 'ns' in jd:
                 ns = jd['ns']
                 for nsx in ns:
-                    nsx = nsx.tolower()
+                    nsx = nsx.lower()
                     if nsx.endswith("."):
                         nsx = nsx[:-1]
                     if nsx.endswith("nowcndns.com"):
@@ -88,7 +88,8 @@ for line in open(dns_millions_result, "r"):
     if ret and million_range >= 0 and million_range < 5:
         range_table[million_range].add(is_cn, is_cc, is_now_cn_dns)
 
-columns = "From, To, Nb, Nb_Now, Nb_CN, Nb_CN_Now, Nb_CC, Nb_CC_Now, Nb_Others, Nb_Others_Now,"
+columns =  ["From", "To", "Nb", "Nb_Now", "Nb_CN", "Nb_CN_Now",
+           "Nb_CC", "Nb_CC_Now", "Nb_Others", "Nb_Others_Now" ]
 t = []
 start_at = 1
 ends_at = 100
@@ -101,6 +102,6 @@ for i in range(0,5):
         range_table[i].nb_cc, 
         range_table[i].nb_cc_now, 
         range_table[i].nb_other, 
-        range_table[i].nb_other_now ]
+        range_table[i].nb_other_now ])
 df = pd.DataFrame(t, columns=columns)
 df.to_csv(result_file)
