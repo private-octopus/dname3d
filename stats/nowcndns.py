@@ -59,19 +59,19 @@ class range_data:
 
     def add(self, is_cn, is_cc, is_now_cn_dns):
         self.nb += 1
-        if is_cn:
-            self.nb_cn += 1
-        elif is_cc:
-            self.nb_cc += 1
-        else:
-            self.nb_other += 1
         if is_now_cn_dns:
             self.nb_now += 1
-            if is_cn:
+        if is_cn:
+            self.nb_cn += 1
+            if is_now_cn_dns:
                 self.nb_cn_now += 1
-            elif is_cc:
+        elif is_cc:
+            self.nb_cc += 1
+            if is_now_cn_dns:
                 self.nb_cc_now += 1
-            else:
+        else:
+            self.nb_other += 1
+            if is_now_cn_dns:
                 self.nb_other_now += 1
 
 
@@ -91,10 +91,10 @@ for line in open(dns_millions_result, "r"):
 columns =  ["From", "To", "Nb", "Nb_Now", "Nb_CN", "Nb_CN_Now",
            "Nb_CC", "Nb_CC_Now", "Nb_Others", "Nb_Others_Now" ]
 t = []
-start_at = 1
+starts_at = 1
 ends_at = 100
 for i in range(0,5):
-    t.append([ start_at, ends_at, 
+    t.append([ starts_at, ends_at, 
         range_table[i].nb, 
         range_table[i].nb_now, 
         range_table[i].nb_cn, 
@@ -103,5 +103,7 @@ for i in range(0,5):
         range_table[i].nb_cc_now, 
         range_table[i].nb_other, 
         range_table[i].nb_other_now ])
+    starts_at = ends_at + 1
+    ends_at = ends_at*10
 df = pd.DataFrame(t, columns=columns)
 df.to_csv(result_file)
